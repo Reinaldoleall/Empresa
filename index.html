@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor Contábil Pro</title>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* --- Variáveis & Reset --- */
+        :root {
+            --primary: #0f4c81; /* Azul Contábil */
+            --primary-dark: #0a355c;
+            --accent: #eca400; 
+            --bg: #f0f2f5;
+            --surface: #ffffff;
+            --text-main: #1f2937;
+            --text-sec: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --radius: 8px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        body { background-color: var(--bg); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* --- Utilitários --- */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        button { cursor: pointer; border: none; background: none; font-size: 1rem; transition: all 0.2s; }
+        input, select, textarea { font-family: inherit; }
+
+        /* --- LOGIN SCREEN ESTILOS --- */
+        #auth-screen {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .auth-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1556761175-b413da4baf72?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.15;
+            z-index: 1;
+        }
+        
+        .auth-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(15, 76, 129, 0.9) 0%, rgba(17, 24, 39, 0.95) 100%);
+            z-index: 2;
+        }
+        
+        .auth-box {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            position: relative;
+            z-index: 3;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .logo-container {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            color: white;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .brand-name {
+            color: var(--primary);
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .brand-subtitle {
+            color: var(--text-sec);
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-sec); }
+        .std-input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem; outline: none; transition: border-color 0.2s; }
+        .std-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.1); }
+
+        .btn-main { width: 100%; padding: 12px; background: var(--primary); color: white; font-weight: 600; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-main:hover { background: var(--primary-dark); }
+        .btn-link { color: var(--primary); font-size: 0.9rem; text-decoration: underline; }
+
+        /* --- APP SCREEN --- */
+        #app-screen { height: 100%; display: flex; flex-direction: column; }
+        
+        /* Header com gradiente profissional */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-bottom: none;
+            padding: 0 24px;
+            height: 70px;
+            box-shadow: 0 4px 12px rgba(15, 76, 129, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+        }
+        
+        .brand {
+            font-weight: 800;
+            color: white;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .brand span {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        /* Tabs com estilo moderno */
+        .nav-tabs {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px;
+            border-radius: 12px;
+            gap: 4px;
+            height: auto;
+            display: flex;
+        }
+        
+        .nav-tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s;
+            border: none;
+            height: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+        
+        .nav-tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-actions { display: flex; align-items: center; gap: 10px; }
+        .logout-btn { padding: 8px; color: rgba(255, 255, 255, 0.8); border-radius: 50%; }
+        .logout-btn:hover { background: rgba(255, 255, 255, 0.15); color: white; }
+
+        /* Main Area */
+        .content-area { flex: 1; overflow-y: auto; padding: 20px; max-width: 900px; margin: 0 auto; width: 100%; }
+        
+        /* Dashboard Metrics */
+.metrics-grid {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.metric-card {
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    flex: 1; /* Cada card ocupa espaço igual */
+    cursor: pointer;
+}
+
+.metric-card.active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(15, 76, 129, 0.2);
+}
+
+.metric-card.active .metric-value,
+.metric-card.active .metric-label {
+    color: white;
+}
+
+.metric-card.active .metric-icon {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+        
+        .metric-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 20px;
+            background: var(--bg);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1;
+        }
+        
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-sec);
+            margin-top: 4px;
+        }
+
+        /* Section Styles */
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-title { font-size: 1.1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+        .counter-badge { background: var(--bg); color: var(--text-sec); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; }
+
+        /* Task Cards - Design Aprimorado */
+        .task-list { display: flex; flex-direction: column; gap: 12px; }
+        .card { 
+            background: var(--surface); 
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .card:hover::before {
+            opacity: 1;
+        }
+        
+        .card:hover { 
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Estilo para tarefas urgentes */
+        .card.urgent {
+            border-left-color: var(--danger);
+            background-color: #fffafa;
+            animation: pulse-urgent 2.5s infinite;
+        }
+        
+        @keyframes pulse-urgent {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
+            50% { border-color: rgba(239, 68, 68, 1); }
+            100% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); border-color: rgba(239, 68, 68, 0.4); }
+        }
+        
+        /* Estilo para card destacado (quando navega da tela de empresas) */
+        .card.highlighted {
+            animation: highlight-pulse 2s ease-in-out 3;
+            border-left: 5px solid var(--accent);
+            box-shadow: 0 0 0 2px rgba(236, 164, 0, 0.2);
+        }
+        
+        @keyframes highlight-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(236, 164, 0, 0.4); }
+            50% { box-shadow: 0 0 0 6px rgba(236, 164, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(236, 164, 0, 0); }
+        }
+        
+        .card-content { flex: 1; margin-right: 12px; }
+        
+        .card-header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .card-company { font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .deadline-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .deadline-badge.urgent { background: #fee2e2; color: var(--danger); }
+        .deadline-badge.normal { background: #f3f4f6; color: var(--text-sec); }
+
+        .card-title { font-weight: 600; color: var(--text-main); font-size: 1rem; margin-bottom: 4px; line-height: 1.4; }
+        .card-desc { font-size: 0.85rem; color: var(--text-sec); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        .card-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+        .check-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--bg); color: var(--text-sec); display: flex; align-items: center; justify-content: center; }
+        .check-btn:hover { background: #d1fae5; color: var(--success); }
+        
+        .delete-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--bg); color: var(--text-sec); display: flex; align-items: center; justify-content: center; }
+        .delete-btn:hover { background: #fee2e2; color: var(--danger); }
+
+        .completed-card { opacity: 0.6; background: #f9fafb; border-left-color: var(--success); }
+        .completed-card .card-title { text-decoration: line-through; }
+        .completed-card .check-btn { background: #d1fae5; color: var(--success); }
+
+        /* Company Cards */
+        .company-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .company-card { 
+            background: var(--surface); 
+            padding: 20px; 
+            border-radius: var(--radius); 
+            border: 1px solid var(--border); 
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .company-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        .company-card h4 { color: var(--primary); font-weight: 700; margin-bottom: 5px; }
+        .company-card p { font-size: 0.9rem; color: var(--text-sec); margin-bottom: 2px; }
+        .company-actions { position: absolute; top: 15px; right: 15px; display: flex; gap: 5px; }
+        .icon-btn { padding: 5px; color: var(--text-sec); border-radius: 4px; }
+        .icon-btn:hover { background: var(--bg); color: var(--primary); }
+
+        /* Filtro de Empresa */
+        .company-filter-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--surface);
+            padding: 15px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        
+        .company-filter-label {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        
+        .company-filter-select {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .company-filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(15, 76, 129, 0.1);
+        }
+        
+        .company-filter-clear {
+            padding: 8px 12px;
+            background: var(--bg);
+            color: var(--text-sec);
+            border-radius: var(--radius);
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .company-filter-clear:hover {
+            background: #e5e7eb;
+        }
+
+        /* Company Tasks List - Lista de tarefas da empresa */
+        .company-tasks-section {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .company-tasks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .company-tasks-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .company-tasks-count {
+            background: var(--bg);
+            color: var(--text-sec);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .company-tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .company-task-item {
+            background: var(--surface);
+            padding: 16px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .company-task-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+            border-left-color: var(--accent);
+        }
+        
+        .company-task-item.completed {
+            opacity: 0.7;
+            border-left-color: var(--success);
+        }
+        
+        .company-task-item.completed .company-task-title {
+            text-decoration: line-through;
+            color: var(--text-sec);
+        }
+        
+        .company-task-content {
+            flex: 1;
+        }
+        
+        .company-task-title {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+        
+        .company-task-info {
+            display: flex;
+            gap: 12px;
+            font-size: 0.8rem;
+            color: var(--text-sec);
+        }
+        
+        .company-task-deadline {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .company-task-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+        }
+        
+        .company-task-status.completed {
+            color: var(--success);
+        }
+        
+        .company-task-status.pending {
+            color: var(--warning);
+        }
+        
+        .company-task-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .company-task-action-btn {
+            padding: 6px 12px;
+            background: var(--bg);
+            color: var(--text-main);
+            border-radius: var(--radius);
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .company-task-action-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .company-task-action-btn.view {
+            background: rgba(15, 76, 129, 0.1);
+            color: var(--primary);
+        }
+        
+        .company-task-action-btn.view:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* FAB */
+        .fab { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px; 
+            width: 56px; 
+            height: 56px; 
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
+            color: white; 
+            border-radius: 50%; 
+            box-shadow: 0 4px 12px rgba(15, 76, 129, 0.4); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 50; 
+            transition: transform 0.2s; 
+        }
+        .fab:hover { transform: scale(1.1); }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal { background: var(--surface); width: 100%; max-width: 500px; border-radius: 12px; overflow: hidden; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+        .modal-header h3 { font-weight: 700; color: var(--text-main); }
+        .modal-body { padding: 25px; display: flex; flex-direction: column; gap: 20px; }
+        .modal-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc; }
+
+        /* Delete Confirmation Modal */
+        .delete-confirm-modal .modal {
+            max-width: 400px;
+        }
+        
+        .delete-confirm-modal .modal-body {
+            text-align: center;
+            padding: 30px 25px;
+        }
+        
+        .delete-confirm-icon {
+            width: 64px;
+            height: 64px;
+            background: #fee2e2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: var(--danger);
+        }
+        
+        .delete-confirm-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+        
+        .delete-confirm-message {
+            color: var(--text-sec);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .delete-confirm-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .btn-cancel {
+            padding: 10px 20px;
+            background: var(--bg);
+            color: var(--text-main);
+            border-radius: var(--radius);
+            font-weight: 600;
+        }
+        
+        .btn-cancel:hover {
+            background: #e5e7eb;
+        }
+        
+        .btn-danger {
+            padding: 10px 20px;
+            background: var(--danger);
+            color: white;
+            border-radius: var(--radius);
+            font-weight: 600;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* Toast */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 12px 20px; border-radius: var(--radius); color: white; font-size: 0.9rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s; }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .toast.warning { background: var(--warning); }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .app-header { padding: 0 15px; }
+            .brand span { display: none; } 
+            .nav-tabs { gap: 15px; }
+            .content-area { padding: 15px; }
+            .fab { bottom: 20px; right: 20px; }
+            .metrics-grid { grid-template-columns: 1fr; }
+            .auth-box { padding: 30px 20px; }
+            .company-filter-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .company-task-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .company-task-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="auth-screen">
+        <!-- Imagem de fundo -->
+        <div class="auth-background"></div>
+        <div class="auth-overlay"></div>
+        
+        <div class="auth-box fade-in">
+            <!-- Logo e branding melhorados -->
+            <div class="logo-container">
+                <div class="logo">
+                    <i data-lucide="calculator" class="logo-icon"></i>
+                </div>
+                <h1 class="brand-name">Gestor Contábil Pro</h1>
+                <p class="brand-subtitle">Gestão profissional para escritórios</p>
+            </div>
+
+            <form id="auth-form">
+                <div class="input-group">
+                    <label for="email">
+                        <i data-lucide="mail" width="16"></i> E-mail
+                    </label>
+                    <input type="email" id="email" class="std-input" placeholder="seu@email.com" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">
+                        <i data-lucide="lock" width="16"></i> Senha
+                    </label>
+                    <input type="password" id="password" class="std-input" placeholder="••••••••" required>
+                    <div style="text-align: right; margin-top: 5px;">
+                        <button type="button" id="toggle-password" style="font-size: 0.8rem; color: var(--primary);">
+                            <i data-lucide="eye" width="14"></i> Mostrar senha
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" id="auth-btn" class="btn-main">
+                    <i data-lucide="log-in" width="18"></i>
+                    <span id="auth-btn-text">Entrar no Sistema</span>
+                </button>
+            </form>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                <button id="toggle-auth-mode" class="btn-link">
+                    <i data-lucide="user-plus" width="14"></i>
+                    <span id="toggle-auth-text">Criar uma nova conta</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP SCREEN -->
+    <div id="app-screen" class="hidden">
+        <header class="app-header">
+            <div class="brand">
+                <i data-lucide="layout-grid"></i>
+                <span>Escritório</span>
+            </div>
+            
+            <nav class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('tasks')">
+                    <i data-lucide="check-square" width="18"></i> Tarefas
+                </button>
+                <button class="nav-tab" onclick="switchTab('companies')">
+                    <i data-lucide="building-2" width="18"></i> Empresas
+                </button>
+            </nav>
+
+            <div class="user-actions">
+                <button class="logout-btn" id="logout-btn" title="Sair">
+                    <i data-lucide="log-out" width="20"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- VIEW: TAREFAS -->
+        <main id="view-tasks" class="content-area fade-in">
+            <!-- Dashboard Metrics com filtros -->
+            <div class="metrics-grid">
+                <div class="metric-card" id="filter-today" onclick="setTaskFilter('today')">
+                    <div class="metric-icon">
+                        <i data-lucide="clock"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value" id="today-tasks">0</div>
+                        <div class="metric-label">Para hoje</div>
+                    </div>
+                </div>
+                <div class="metric-card" id="filter-urgent" onclick="setTaskFilter('urgent')">
+                    <div class="metric-icon">
+                        <i data-lucide="alert-circle"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value" id="urgent-tasks">0</div>
+                        <div class="metric-label">Urgentes</div>
+                    </div>
+                </div>
+                <div class="metric-card" id="filter-completed" onclick="setTaskFilter('completed')">
+                    <div class="metric-icon">
+                        <i data-lucide="trending-up"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value" id="completed-today">0</div>
+                        <div class="metric-label">Concluídas hoje</div>
+                    </div>
+                </div>
+                <div class="metric-card" id="filter-all" onclick="setTaskFilter('all')">
+                    <div class="metric-icon">
+                        <i data-lucide="list"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value" id="all-tasks">0</div>
+                        <div class="metric-label">Todas</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <div class="section-title">
+                    <span id="filter-title">Pendências</span> <span id="pending-count" class="counter-badge">0</span>
+                </div>
+                <div id="filter-info" style="font-size: 0.85rem; color: var(--text-sec);">
+                    <i data-lucide="filter"></i> <span id="current-filter">Todas as tarefas</span>
+                </div>
+            </div>
+            
+            <div id="pending-list" class="task-list"></div>
+
+            <div class="section-title" style="margin-top: 40px; color: var(--text-sec);">
+                <i data-lucide="archive" width="16"></i> Histórico Recente
+            </div>
+            <div id="completed-list" class="task-list"></div>
+        </main>
+
+        <!-- VIEW: EMPRESAS -->
+        <main id="view-companies" class="content-area hidden fade-in">
+            <!-- Filtro de Empresa -->
+            <div class="company-filter-container">
+                <div class="company-filter-label">
+                    <i data-lucide="filter" width="16"></i> Filtrar por empresa:
+                </div>
+                <select id="company-filter-select" class="company-filter-select" onchange="filterCompanyTasks()">
+                    <option value="">Todas as empresas</option>
+                    <!-- Options populated via JS -->
+                </select>
+                <button id="company-filter-clear" class="company-filter-clear hidden" onclick="clearCompanyFilter()">
+                    <i data-lucide="x" width="14"></i> Limpar
+                </button>
+            </div>
+
+            <div class="section-header">
+                <div class="section-title">
+                    Carteira de Clientes <span id="company-count" class="counter-badge">0</span>
+                </div>
+            </div>
+            
+            <div id="company-list" class="company-grid"></div>
+            
+            <!-- Seção de tarefas da empresa filtrada -->
+            <div id="company-tasks-section" class="company-tasks-section hidden">
+                <div class="company-tasks-header">
+                    <div class="company-tasks-title">
+                        <i data-lucide="list-checks" width="18"></i>
+                        <span id="company-tasks-title">Tarefas da Empresa</span>
+                        <span id="company-tasks-count" class="company-tasks-count">0</span>
+                    </div>
+                </div>
+                <div id="company-tasks-list" class="company-tasks-list"></div>
+            </div>
+            
+            <div id="empty-companies" class="hidden" style="text-align: center; padding: 50px; border: 2px dashed var(--border); border-radius: 8px; color: var(--text-sec);">
+                <i data-lucide="building" width="48" style="margin-bottom: 10px; opacity: 0.5;"></i>
+                <p>Nenhuma empresa cadastrada.</p>
+                <p style="font-size: 0.8rem;">Cadastre seus clientes para vincular tarefas.</p>
+            </div>
+        </main>
+
+        <!-- FAB -->
+        <button id="main-fab" class="fab" onclick="handleFabClick()">
+            <i data-lucide="plus" width="28"></i>
+        </button>
+    </div>
+
+    <!-- MODAL: TAREFA -->
+    <div id="modal-task" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-task-title">Nova Tarefa</h3>
+                <button onclick="closeModals()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="task-id">
+                
+                <div class="input-group">
+                    <label>Empresa / Cliente *</label>
+                    <select id="task-company" class="std-input" required>
+                        <option value="">Selecione a Empresa...</option>
+                        <!-- Options populated via JS -->
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Título da Demanda *</label>
+                    <input type="text" id="task-title" class="std-input" placeholder="Ex: Fechamento Folha, DAS, IR...">
+                </div>
+
+                <div class="input-group">
+                    <label>Prazo Limite</label>
+                    <input type="date" id="task-deadline" class="std-input">
+                </div>
+
+                <div class="input-group">
+                    <label>Detalhes (Opcional)</label>
+                    <textarea id="task-desc" class="std-input" rows="3" placeholder="Prazos, protocolos, obs..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn-delete-task" class="hidden" style="color: var(--danger); margin-right: auto; font-weight: 600;" onclick="confirmDeleteTask()">
+                    <i data-lucide="trash-2" width="16"></i> Excluir Tarefa
+                </button>
+                <button onclick="closeModals()" style="color: var(--text-sec); font-weight: 600; padding: 0 15px;">Cancelar</button>
+                <button onclick="saveTask()" class="btn-main" style="width: auto; padding: 10px 24px;">Salvar Tarefa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EMPRESA -->
+    <div id="modal-company" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-company-title">Cadastrar Empresa</h3>
+                <button onclick="closeModals()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="company-id">
+                
+                <div class="input-group">
+                    <label>Razão Social / Nome Fantasia *</label>
+                    <input type="text" id="company-name" class="std-input" placeholder="Ex: Padaria Central LTDA">
+                </div>
+
+                <div class="input-group">
+                    <label>CNPJ (Opcional)</label>
+                    <input type="text" id="company-cnpj" class="std-input" placeholder="00.000.000/0001-00">
+                </div>
+                
+                <div class="input-group">
+                    <label>Telefone / Contato</label>
+                    <input type="text" id="company-phone" class="std-input" placeholder="(00) 00000-0000">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn-delete-company" class="hidden" style="color: var(--danger); margin-right: auto; font-weight: 600;" onclick="confirmDeleteCompany()">
+                    <i data-lucide="trash-2" width="16"></i> Excluir Empresa
+                </button>
+                <button onclick="closeModals()" style="color: var(--text-sec); font-weight: 600; padding: 0 15px;">Cancelar</button>
+                <button onclick="saveCompany()" class="btn-main" style="width: auto; padding: 10px 24px;">Salvar Empresa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO -->
+    <div id="modal-delete-confirm" class="modal-overlay hidden delete-confirm-modal">
+        <div class="modal">
+            <div class="modal-body">
+                <div class="delete-confirm-icon">
+                    <i data-lucide="alert-triangle" width="32"></i>
+                </div>
+                <div class="delete-confirm-title" id="delete-confirm-title">Excluir Item</div>
+                <div class="delete-confirm-message" id="delete-confirm-message">Tem certeza que deseja excluir este item?</div>
+                <div class="delete-confirm-actions">
+                    <button class="btn-cancel" onclick="closeModals()">Cancelar</button>
+                    <button class="btn-danger" id="btn-confirm-delete" onclick="confirmDelete()">Sim, Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyByyM8RvGNM5pyrQIQ7nCH6mmgYAIpq0bc",
+            authDomain: "rifas-c414b.firebaseapp.com",
+            projectId: "rifas-c414b",
+            storageBucket: "rifas-c414b.firebasestorage.app",
+            messagingSenderId: "770195193538",
+            appId: "1:770195193538:web:48e585ac5661d27f3dc55b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
+
+        // STATE
+        let currentUser = null;
+        let isLoginMode = true;
+        let currentTab = 'tasks';
+        let allTasks = [];
+        let allCompanies = [];
+        let unsubTasks = null;
+        let unsubCompanies = null;
+        let currentTaskFilter = 'all'; // 'all', 'today', 'urgent', 'completed'
+        let deletePending = { type: null, id: null }; // Para controlar exclusões pendentes
+        let selectedCompanyId = null; // Para controlar qual empresa está sendo filtrada
+        let taskToHighlight = null; // Para controlar qual tarefa destacar ao navegar
+
+        // AUTH LOGIC
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                subscribeData();
+                lucide.createIcons(); // Recriar ícones após mudança de tela
+            } else {
+                document.getElementById('app-screen').classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
+                if (unsubTasks) unsubTasks();
+                if (unsubCompanies) unsubCompanies();
+                lucide.createIcons(); // Recriar ícones após mudança de tela
+            }
+        });
+
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('auth-btn');
+            
+            btn.innerHTML = '<i data-lucide="loader-2" width="18"></i> Processando...';
+            btn.disabled = true;
+
+            try {
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showToast('Conta criada com sucesso!', 'success');
+                }
+            } catch (err) {
+                console.error(err);
+                let msg = "Erro na autenticação";
+                if(err.code === 'auth/wrong-password') msg = "Senha incorreta";
+                if(err.code === 'auth/user-not-found') msg = "Usuário não encontrado";
+                if(err.code === 'auth/weak-password') msg = "Senha muito fraca (min 6 digitos)";
+                if(err.code === 'auth/email-already-in-use') msg = "E-mail já cadastrado";
+                showToast(msg, 'error');
+            } finally {
+                updateAuthButton();
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        });
+
+        // Função para atualizar o botão de autenticação
+        function updateAuthButton() {
+            const authBtn = document.getElementById('auth-btn');
+            const authBtnText = document.getElementById('auth-btn-text');
+            
+            if (isLoginMode) {
+                authBtnText.textContent = 'Entrar no Sistema';
+                authBtn.innerHTML = '<i data-lucide="log-in" width="18"></i> Entrar no Sistema';
+            } else {
+                authBtnText.textContent = 'Criar Conta';
+                authBtn.innerHTML = '<i data-lucide="user-plus" width="18"></i> Criar Conta';
+            }
+        }
+
+        // Função para atualizar o toggle de modo
+        function updateAuthToggle() {
+            const toggleText = document.getElementById('toggle-auth-text');
+            const toggleBtn = document.getElementById('toggle-auth-mode');
+            
+            if (isLoginMode) {
+                toggleText.textContent = 'Criar uma nova conta';
+                toggleBtn.innerHTML = '<i data-lucide="user-plus" width="14"></i> Criar uma nova conta';
+            } else {
+                toggleText.textContent = 'Já tenho uma conta';
+                toggleBtn.innerHTML = '<i data-lucide="log-in" width="14"></i> Já tenho uma conta';
+            }
+        }
+
+        document.getElementById('toggle-auth-mode').addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+            updateAuthButton();
+            updateAuthToggle();
+            lucide.createIcons();
+        });
+
+        // Toggle password visibility
+        document.getElementById('toggle-password')?.addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+                this.innerHTML = '<i data-lucide="eye-off" width="14"></i> Ocultar senha';
+            } else {
+                passwordInput.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+                this.innerHTML = '<i data-lucide="eye" width="14"></i> Mostrar senha';
+            }
+            lucide.createIcons();
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            if (confirm('Deseja realmente sair do sistema?')) {
+                signOut(auth);
+            }
+        });
+
+        // NAVIGATION
+        window.switchTab = (tab) => {
+            currentTab = tab;
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.nav-tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+            
+            if (tab === 'tasks') {
+                document.getElementById('view-tasks').classList.remove('hidden');
+                document.getElementById('view-companies').classList.add('hidden');
+                renderTasks(); // Re-render tasks when switching to tasks tab
+                
+                // Se há uma tarefa para destacar, destacar ela
+                if (taskToHighlight) {
+                    setTimeout(() => {
+                        highlightTask(taskToHighlight);
+                        taskToHighlight = null; // Resetar após destacar
+                    }, 100);
+                }
+            } else {
+                document.getElementById('view-tasks').classList.add('hidden');
+                document.getElementById('view-companies').classList.remove('hidden');
+            }
+            lucide.createIcons();
+        };
+
+        window.handleFabClick = () => {
+            if (currentTab === 'tasks') openTaskModal();
+            else openCompanyModal();
+        };
+
+        // DATA SYNC
+        function subscribeData() {
+            if (!currentUser) return;
+            
+            // Sync Companies
+            const compRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'companies');
+            unsubCompanies = onSnapshot(compRef, (snap) => {
+                allCompanies = [];
+                snap.forEach(doc => allCompanies.push({ id: doc.id, ...doc.data() }));
+                allCompanies.sort((a,b) => a.name.localeCompare(b.name));
+                renderCompanies();
+                updateCompanyFilterSelect();
+                renderTasks(); // Re-render tasks to update company names
+                updateMetrics(); // Atualizar métricas
+                
+                // Se há um filtro de empresa ativo, atualizar a lista de tarefas
+                if (selectedCompanyId) {
+                    renderCompanyTasks();
+                }
+            });
+
+            // Sync Tasks
+            const taskRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks');
+            unsubTasks = onSnapshot(taskRef, (snap) => {
+                allTasks = [];
+                snap.forEach(doc => allTasks.push({ id: doc.id, ...doc.data() }));
+                
+                // ORDENAÇÃO: Prazos mais próximos primeiro
+                allTasks.sort((a, b) => {
+                    // Se um tem prazo e outro não
+                    if (a.deadline && !b.deadline) return -1;
+                    if (!a.deadline && b.deadline) return 1;
+                    
+                    // Se ambos tem prazo, o menor (mais próximo) vem primeiro
+                    if (a.deadline && b.deadline) {
+                        return a.deadline.localeCompare(b.deadline);
+                    }
+                    
+                    // Desempate por data de criação
+                    return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+                });
+
+                renderTasks();
+                updateMetrics();
+                
+                // Se há um filtro de empresa ativo, atualizar a lista de tarefas
+                if (selectedCompanyId) {
+                    renderCompanyTasks();
+                }
+            });
+        }
+
+        // Atualizar métricas do dashboard
+        function updateMetrics() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            let todayTasks = 0;
+            let urgentTasks = 0;
+            let completedToday = 0;
+            let allPendingTasks = 0;
+            
+            allTasks.forEach(task => {
+                if (!task.completed) allPendingTasks++;
+                
+                if (task.deadline) {
+                    const [y, m, d] = task.deadline.split('-').map(Number);
+                    const deadlineDate = new Date(y, m - 1, d);
+                    
+                    // Tarefas para hoje
+                    if (deadlineDate.getTime() === today.getTime() && !task.completed) {
+                        todayTasks++;
+                    }
+                    
+                    // Tarefas urgentes (para hoje ou amanhã)
+                    if (!task.completed && deadlineDate <= tomorrow) {
+                        urgentTasks++;
+                    }
+                }
+                
+                // Tarefas concluídas hoje
+                if (task.completed && task.updatedAt) {
+                    const updatedDate = new Date(task.updatedAt.seconds * 1000);
+                    if (updatedDate.getDate() === today.getDate() && 
+                        updatedDate.getMonth() === today.getMonth() && 
+                        updatedDate.getFullYear() === today.getFullYear()) {
+                        completedToday++;
+                    }
+                }
+            });
+            
+            document.getElementById('today-tasks').textContent = todayTasks;
+            document.getElementById('urgent-tasks').textContent = urgentTasks;
+            document.getElementById('completed-today').textContent = completedToday;
+            document.getElementById('all-tasks').textContent = allPendingTasks;
+        }
+
+        // Atualizar o select de filtro de empresa
+        function updateCompanyFilterSelect() {
+            const select = document.getElementById('company-filter-select');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">Todas as empresas</option>';
+            
+            allCompanies.forEach(company => {
+                const option = document.createElement('option');
+                option.value = company.id;
+                option.textContent = company.name;
+                select.appendChild(option);
+            });
+            
+            // Restaurar o valor selecionado
+            if (currentValue && allCompanies.some(c => c.id === currentValue)) {
+                select.value = currentValue;
+            }
+            
+            lucide.createIcons();
+        }
+
+        // Função para filtrar tarefas por empresa
+        window.filterCompanyTasks = () => {
+            const select = document.getElementById('company-filter-select');
+            selectedCompanyId = select.value;
+            const clearBtn = document.getElementById('company-filter-clear');
+            
+            if (selectedCompanyId) {
+                clearBtn.classList.remove('hidden');
+                renderCompanyTasks();
+            } else {
+                clearBtn.classList.add('hidden');
+                clearCompanyFilter();
+            }
+        };
+
+        // Função para limpar filtro de empresa
+        window.clearCompanyFilter = () => {
+            const select = document.getElementById('company-filter-select');
+            select.value = '';
+            selectedCompanyId = null;
+            document.getElementById('company-filter-clear').classList.add('hidden');
+            
+            // Esconder a seção de tarefas da empresa
+            document.getElementById('company-tasks-section').classList.add('hidden');
+        };
+
+        // Renderizar tarefas da empresa selecionada
+        function renderCompanyTasks() {
+            if (!selectedCompanyId) return;
+            
+            const company = allCompanies.find(c => c.id === selectedCompanyId);
+            if (!company) return;
+            
+            const section = document.getElementById('company-tasks-section');
+            const tasksList = document.getElementById('company-tasks-list');
+            const title = document.getElementById('company-tasks-title');
+            const count = document.getElementById('company-tasks-count');
+            
+            // Atualizar título
+            title.textContent = `Tarefas - ${company.name}`;
+            
+            // Filtrar tarefas da empresa
+            const companyTasks = allTasks.filter(task => task.companyId === selectedCompanyId);
+            
+            // Atualizar contador
+            const pendingCount = companyTasks.filter(t => !t.completed).length;
+            const completedCount = companyTasks.filter(t => t.completed).length;
+            count.textContent = `${companyTasks.length} (${pendingCount} pendentes, ${completedCount} concluídas)`;
+            
+            // Renderizar lista de tarefas
+            tasksList.innerHTML = '';
+            
+            if (companyTasks.length === 0) {
+                tasksList.innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: var(--text-sec);">
+                        <i data-lucide="clipboard-list" width="32" style="opacity: 0.5; margin-bottom: 10px;"></i>
+                        <p>Nenhuma tarefa encontrada para esta empresa.</p>
+                    </div>
+                `;
+            } else {
+                companyTasks.forEach(task => {
+                    const taskItem = document.createElement('div');
+                    taskItem.className = `company-task-item ${task.completed ? 'completed' : ''}`;
+                    
+                    let deadlineHtml = '';
+                    if (task.deadline) {
+                        const [y, m, d] = task.deadline.split('-').map(Number);
+                        const deadlineDate = new Date(y, m - 1, d);
+                        const formattedDate = deadlineDate.toLocaleDateString('pt-BR');
+                        deadlineHtml = `
+                            <div class="company-task-deadline">
+                                <i data-lucide="calendar" width="12"></i>
+                                <span>${formattedDate}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    taskItem.innerHTML = `
+                        <div class="company-task-content">
+                            <div class="company-task-title">${escapeHtml(task.title)}</div>
+                            <div class="company-task-info">
+                                <div class="company-task-status ${task.completed ? 'completed' : 'pending'}">
+                                    <i data-lucide="${task.completed ? 'check-circle' : 'clock'}" width="12"></i>
+                                    <span>${task.completed ? 'Concluída' : 'Pendente'}</span>
+                                </div>
+                                ${deadlineHtml}
+                                ${task.description ? `<div><i data-lucide="file-text" width="12"></i> ${escapeHtml(task.description.substring(0, 30))}${task.description.length > 30 ? '...' : ''}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="company-task-actions">
+                            <button class="company-task-action-btn view" onclick="navigateToTask('${task.id}')">
+                                <i data-lucide="eye" width="14"></i> Ver
+                            </button>
+                            <button class="company-task-action-btn" onclick="openTaskModal(${JSON.stringify(task).replace(/'/g, "&#39;")})">
+                                <i data-lucide="pencil" width="14"></i> Editar
+                            </button>
+                        </div>
+                    `;
+                    
+                    tasksList.appendChild(taskItem);
+                });
+            }
+            
+            // Mostrar a seção
+            section.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // Função para navegar para uma tarefa específica
+        window.navigateToTask = (taskId) => {
+            taskToHighlight = taskId;
+            switchTab('tasks');
+        };
+
+        // Função para destacar uma tarefa na lista
+        function highlightTask(taskId) {
+            // Remover destaque de todas as tarefas
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.remove('highlighted');
+            });
+            
+            // Encontrar e destacar a tarefa específica
+            const taskElement = document.querySelector(`.card [onclick*="${taskId}"]`)?.closest('.card');
+            if (taskElement) {
+                taskElement.classList.add('highlighted');
+                
+                // Scroll para a tarefa
+                taskElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }
+
+        // Função para definir o filtro de tarefas
+        window.setTaskFilter = (filter) => {
+            currentTaskFilter = filter;
+            
+            // Remover classe active de todos os filtros
+            document.querySelectorAll('.metric-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            // Adicionar classe active ao filtro selecionado
+            const filterMap = {
+                'all': 'filter-all',
+                'today': 'filter-today',
+                'urgent': 'filter-urgent',
+                'completed': 'filter-completed'
+            };
+            
+            document.getElementById(filterMap[filter]).classList.add('active');
+            
+            // Atualizar título do filtro
+            const filterTitles = {
+                'all': 'Todas as tarefas',
+                'today': 'Tarefas para hoje',
+                'urgent': 'Tarefas urgentes',
+                'completed': 'Tarefas concluídas hoje'
+            };
+            
+            document.getElementById('filter-title').textContent = filter === 'all' ? 'Pendências' : filterTitles[filter];
+            document.getElementById('current-filter').textContent = filterTitles[filter];
+            
+            // Renderizar tarefas com o filtro aplicado
+            renderTasks();
+        };
+
+        // RENDER TASKS
+        function renderTasks() {
+            const pendingList = document.getElementById('pending-list');
+            const completedList = document.getElementById('completed-list');
+            pendingList.innerHTML = '';
+            completedList.innerHTML = '';
+            
+            let pendingCount = 0;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            // Define data limite para "Urgente" (hoje e amanhã)
+            const urgentThreshold = new Date(today);
+            urgentThreshold.setDate(urgentThreshold.getDate() + 1); // Amanhã
+
+            allTasks.forEach(task => {
+                const company = allCompanies.find(c => c.id === task.companyId);
+                const companyName = company ? company.name : 'Empresa não encontrada';
+                
+                let deadlineHtml = '';
+                let isUrgent = false;
+                let isToday = false;
+                let isCompletedToday = false;
+
+                // Verificar se a tarefa deve ser mostrada com base no filtro atual
+                let showTask = true;
+                
+                if (currentTaskFilter === 'today' && task.deadline) {
+                    const [y, m, d] = task.deadline.split('-').map(Number);
+                    const deadlineDate = new Date(y, m - 1, d);
+                    isToday = deadlineDate.getTime() === today.getTime();
+                    if (!isToday || task.completed) showTask = false;
+                }
+                
+                if (currentTaskFilter === 'urgent' && task.deadline) {
+                    const [y, m, d] = task.deadline.split('-').map(Number);
+                    const deadlineDate = new Date(y, m - 1, d);
+                    isUrgent = !task.completed && deadlineDate <= tomorrow;
+                    if (!isUrgent) showTask = false;
+                }
+                
+                if (currentTaskFilter === 'completed' && task.completed) {
+                    if (task.updatedAt) {
+                        const updatedDate = new Date(task.updatedAt.seconds * 1000);
+                        isCompletedToday = updatedDate.getDate() === today.getDate() && 
+                                         updatedDate.getMonth() === today.getMonth() && 
+                                         updatedDate.getFullYear() === today.getFullYear();
+                        if (!isCompletedToday) showTask = false;
+                    } else {
+                        showTask = false;
+                    }
+                }
+                
+                if (currentTaskFilter === 'completed' && !task.completed) {
+                    showTask = false;
+                }
+                
+                // Se filtro "all", mostrar todas as pendentes no pending list
+                if (currentTaskFilter === 'all' && task.completed) {
+                    showTask = false; // As concluídas vão para completed-list
+                }
+
+                if (!showTask && !task.completed) {
+                    return; // Não mostrar esta tarefa no pending list
+                }
+
+                if (task.deadline) {
+                    // Para evitar confusão de fuso horário ao criar a data a partir da string YYYY-MM-DD
+                    const [y, m, d] = task.deadline.split('-').map(Number);
+                    const deadlineDate = new Date(y, m - 1, d); // Mês é 0-indexado
+                    
+                    // Verifica urgência: Se data prazo <= amanhã E não concluída
+                    if (!task.completed && deadlineDate <= urgentThreshold) {
+                        isUrgent = true;
+                    }
+
+                    const dateFormatted = deadlineDate.toLocaleDateString('pt-BR');
+                    const badgeClass = isUrgent ? 'urgent' : 'normal';
+                    const icon = isUrgent ? 'alert-circle' : 'calendar';
+                    deadlineHtml = `<span class="deadline-badge ${badgeClass}"><i data-lucide="${icon}" width="10"></i> ${dateFormatted}</span>`;
+                }
+
+                const div = document.createElement('div');
+                // Aplica classe .urgent se for urgente
+                div.className = `card ${task.completed ? 'completed-card' : ''} ${isUrgent ? 'urgent' : ''} ${taskToHighlight === task.id ? 'highlighted' : ''}`;
+                
+                div.onclick = (e) => {
+                    if(!e.target.closest('.check-btn') && !e.target.closest('.delete-btn')) openTaskModal(task);
+                };
+
+                div.innerHTML = `
+                    <div class="card-content">
+                        <div class="card-header-row">
+                            <div class="card-company"><i data-lucide="building-2" width="12"></i> ${escapeHtml(companyName)}</div>
+                            ${deadlineHtml}
+                        </div>
+                        <div class="card-title">${escapeHtml(task.title)}</div>
+                        ${task.description ? `<div class="card-desc">${escapeHtml(task.description)}</div>` : ''}
+                    </div>
+                    <div class="card-actions">
+                        <button class="delete-btn" onclick="event.stopPropagation(); confirmDeleteTask('${task.id}', '${escapeHtml(task.title)}')">
+                            <i data-lucide="trash-2" width="18"></i>
+                        </button>
+                        <button class="check-btn" onclick="event.stopPropagation(); toggleTask('${task.id}', ${!task.completed})">
+                            <i data-lucide="${task.completed ? 'rotate-ccw' : 'check'}" width="18"></i>
+                        </button>
+                    </div>
+                `;
+
+                if (task.completed) {
+                    // Para tarefas concluídas, só mostrar se for filtro "completed" ou "all"
+                    if (currentTaskFilter === 'completed' || currentTaskFilter === 'all') {
+                        completedList.appendChild(div);
+                    }
+                } else {
+                    pendingList.appendChild(div);
+                    pendingCount++;
+                }
+            });
+
+            // Atualizar contador baseado no filtro atual
+            if (currentTaskFilter === 'today') {
+                pendingCount = allTasks.filter(task => {
+                    if (task.completed) return false;
+                    if (!task.deadline) return false;
+                    const [y, m, d] = task.deadline.split('-').map(Number);
+                    const deadlineDate = new Date(y, m - 1, d);
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    return deadlineDate.getTime() === today.getTime();
+                }).length;
+            } else if (currentTaskFilter === 'urgent') {
+                pendingCount = allTasks.filter(task => {
+                    if (task.completed) return false;
+                    if (!task.deadline) return false;
+                    const [y, m, d] = task.deadline.split('-').map(Number);
+                    const deadlineDate = new Date(y, m - 1, d);
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    return deadlineDate <= tomorrow;
+                }).length;
+            } else if (currentTaskFilter === 'completed') {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                pendingCount = allTasks.filter(task => {
+                    if (!task.completed || !task.updatedAt) return false;
+                    const updatedDate = new Date(task.updatedAt.seconds * 1000);
+                    return updatedDate.getDate() === today.getDate() && 
+                           updatedDate.getMonth() === today.getMonth() && 
+                           updatedDate.getFullYear() === today.getFullYear();
+                }).length;
+            }
+
+            document.getElementById('pending-count').textContent = pendingCount;
+            lucide.createIcons();
+        }
+
+        // RENDER COMPANIES
+        function renderCompanies() {
+            const list = document.getElementById('company-list');
+            const empty = document.getElementById('empty-companies');
+            list.innerHTML = '';
+            
+            document.getElementById('company-count').textContent = allCompanies.length;
+
+            if (allCompanies.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            allCompanies.forEach(comp => {
+                const div = document.createElement('div');
+                div.className = 'company-card';
+                div.innerHTML = `
+                    <h4>${escapeHtml(comp.name)}</h4>
+                    ${comp.cnpj ? `<p><i data-lucide="file-text" width="12"></i> ${escapeHtml(comp.cnpj)}</p>` : ''}
+                    ${comp.phone ? `<p><i data-lucide="phone" width="12"></i> ${escapeHtml(comp.phone)}</p>` : ''}
+                    <div class="company-actions">
+                        <button class="icon-btn" onclick='openCompanyModal(${JSON.stringify(comp).replace(/'/g, "&#39;")})'><i data-lucide="pencil" width="16"></i></button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        // TASK ACTIONS
+        window.openTaskModal = (task = null) => {
+            const modal = document.getElementById('modal-task');
+            const select = document.getElementById('task-company');
+            
+            select.innerHTML = '<option value="">Selecione a Empresa...</option>';
+            allCompanies.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                select.appendChild(opt);
+            });
+
+            if(allCompanies.length === 0) {
+                showToast('Cadastre uma empresa primeiro!', 'error');
+                switchTab('companies');
+                return;
+            }
+
+            if (task) {
+                document.getElementById('modal-task-title').textContent = 'Editar Tarefa';
+                document.getElementById('task-id').value = task.id;
+                document.getElementById('task-title').value = task.title;
+                document.getElementById('task-desc').value = task.description || '';
+                document.getElementById('task-deadline').value = task.deadline || '';
+                select.value = task.companyId || '';
+                document.getElementById('btn-delete-task').classList.remove('hidden');
+            } else {
+                document.getElementById('modal-task-title').textContent = 'Nova Tarefa';
+                document.getElementById('task-id').value = '';
+                document.getElementById('task-title').value = '';
+                document.getElementById('task-desc').value = '';
+                document.getElementById('task-deadline').value = ''; // Reset deadline
+                select.value = '';
+                document.getElementById('btn-delete-task').classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.saveTask = async () => {
+            const id = document.getElementById('task-id').value;
+            const companyId = document.getElementById('task-company').value;
+            const title = document.getElementById('task-title').value;
+            const description = document.getElementById('task-desc').value;
+            const deadline = document.getElementById('task-deadline').value; // Get deadline
+
+            if (!companyId) return showToast('Selecione uma empresa', 'error');
+            if (!title) return showToast('Título é obrigatório', 'error');
+
+            const data = { companyId, title, description, deadline, updatedAt: serverTimestamp() };
+            
+            try {
+                if (id) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), data);
+                    showToast('Tarefa atualizada', 'success');
+                } else {
+                    data.completed = false;
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), data);
+                    showToast('Tarefa criada', 'success');
+                }
+                closeModals();
+            } catch(e) { console.error(e); showToast('Erro ao salvar', 'error'); }
+        };
+
+        window.toggleTask = async (id, status) => {
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), { 
+                    completed: status,
+                    updatedAt: serverTimestamp() 
+                });
+                showToast(status ? 'Tarefa concluída!' : 'Tarefa reaberta', 'success');
+            } catch(e) { showToast('Erro ao atualizar', 'error'); }
+        };
+
+        // Função para confirmar exclusão de tarefa
+        window.confirmDeleteTask = (taskId = null, taskTitle = null) => {
+            if (taskId) {
+                // Exclusão direta da lista
+                deletePending = { type: 'task', id: taskId };
+                document.getElementById('delete-confirm-title').textContent = 'Excluir Tarefa';
+                document.getElementById('delete-confirm-message').textContent = `Tem certeza que deseja excluir a tarefa "${taskTitle || 'esta tarefa'}"? Esta ação não pode ser desfeita.`;
+            } else {
+                // Exclusão do modal de edição
+                const taskIdFromModal = document.getElementById('task-id').value;
+                const taskTitleFromModal = document.getElementById('task-title').value;
+                deletePending = { type: 'task', id: taskIdFromModal };
+                document.getElementById('delete-confirm-title').textContent = 'Excluir Tarefa';
+                document.getElementById('delete-confirm-message').textContent = `Tem certeza que deseja excluir a tarefa "${taskTitleFromModal || 'esta tarefa'}"? Esta ação não pode ser desfeita.`;
+            }
+            
+            document.getElementById('modal-delete-confirm').classList.remove('hidden');
+        };
+
+        // Função para excluir tarefas de uma empresa antes de excluir a empresa
+        async function deleteCompanyTasks(companyId) {
+            try {
+                const tasksRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks');
+                const q = query(tasksRef, where('companyId', '==', companyId));
+                const querySnapshot = await getDocs(q);
+                
+                const deletePromises = [];
+                querySnapshot.forEach((docSnapshot) => {
+                    deletePromises.push(deleteDoc(docSnapshot.ref));
+                });
+                
+                await Promise.all(deletePromises);
+                return querySnapshot.size; // Retorna quantas tarefas foram excluídas
+            } catch (error) {
+                console.error('Erro ao excluir tarefas da empresa:', error);
+                throw error;
+            }
+        }
+
+        // Função para confirmar exclusão de empresa
+        window.confirmDeleteCompany = () => {
+            const companyId = document.getElementById('company-id').value;
+            const companyName = document.getElementById('company-name').value;
+            
+            deletePending = { type: 'company', id: companyId };
+            document.getElementById('delete-confirm-title').textContent = 'Excluir Empresa';
+            document.getElementById('delete-confirm-message').textContent = `Tem certeza que deseja excluir a empresa "${companyName}"? Todas as tarefas vinculadas a esta empresa também serão excluídas. Esta ação não pode ser desfeita.`;
+            
+            document.getElementById('modal-delete-confirm').classList.remove('hidden');
+        };
+
+        // Função para executar a exclusão confirmada
+        window.confirmDelete = async () => {
+            if (!deletePending.type || !deletePending.id) {
+                showToast('Erro ao excluir: item não identificado', 'error');
+                closeModals();
+                return;
+            }
+
+            try {
+                if (deletePending.type === 'task') {
+                    // Excluir tarefa
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', deletePending.id));
+                    showToast('Tarefa excluída com sucesso', 'success');
+                } else if (deletePending.type === 'company') {
+                    // Excluir tarefas da empresa primeiro
+                    const tasksDeleted = await deleteCompanyTasks(deletePending.id);
+                    
+                    // Agora excluir a empresa
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'companies', deletePending.id));
+                    
+                    showToast(`Empresa excluída com sucesso (${tasksDeleted} tarefa(s) removida(s))`, 'success');
+                }
+                
+                closeModals();
+                deletePending = { type: null, id: null }; // Resetar
+            } catch(e) { 
+                console.error(e);
+                showToast('Erro ao excluir', 'error');
+                deletePending = { type: null, id: null }; // Resetar mesmo em caso de erro
+            }
+        };
+
+        // COMPANY ACTIONS
+        window.openCompanyModal = (comp = null) => {
+            if (comp) {
+                document.getElementById('modal-company-title').textContent = 'Editar Empresa';
+                document.getElementById('company-id').value = comp.id;
+                document.getElementById('company-name').value = comp.name;
+                document.getElementById('company-cnpj').value = comp.cnpj || '';
+                document.getElementById('company-phone').value = comp.phone || '';
+                document.getElementById('btn-delete-company').classList.remove('hidden');
+            } else {
+                document.getElementById('modal-company-title').textContent = 'Cadastrar Empresa';
+                document.getElementById('company-id').value = '';
+                document.getElementById('company-name').value = '';
+                document.getElementById('company-cnpj').value = '';
+                document.getElementById('company-phone').value = '';
+                document.getElementById('btn-delete-company').classList.add('hidden');
+            }
+            document.getElementById('modal-company').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.saveCompany = async () => {
+            const id = document.getElementById('company-id').value;
+            const name = document.getElementById('company-name').value;
+            const cnpj = document.getElementById('company-cnpj').value;
+            const phone = document.getElementById('company-phone').value;
+
+            if (!name) return showToast('Nome da empresa é obrigatório', 'error');
+
+            const data = { name, cnpj, phone };
+
+            try {
+                if (id) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'companies', id), data);
+                    showToast('Empresa atualizada', 'success');
+                } else {
+                    await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'companies'), data);
+                    showToast('Empresa cadastrada', 'success');
+                }
+                closeModals();
+            } catch(e) { console.error(e); showToast('Erro ao salvar', 'error'); }
+        };
+
+        // UI HELPERS
+        window.closeModals = () => {
+            document.querySelectorAll('.modal-overlay').forEach(el => el.classList.add('hidden'));
+            deletePending = { type: null, id: null }; // Resetar ao fechar modais
+        };
+
+        function showToast(msg, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = type === 'success' ? `<i data-lucide="check"></i> ${msg}` : 
+                              type === 'warning' ? `<i data-lucide="alert-triangle"></i> ${msg}` :
+                              `<i data-lucide="alert-circle"></i> ${msg}`;
+            document.getElementById('toast-container').appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Inicializar ícones e definir filtro inicial
+        lucide.createIcons();
+        setTimeout(() => {
+            if (document.getElementById('filter-all')) {
+                setTaskFilter('all');
+            }
+        }, 100);
+    </script>
+</body>
+                  </html>
