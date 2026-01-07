@@ -218,7 +218,7 @@
 
         .metric-card {
             background: white;
-            padding: 10px;
+            padding: 1px;
             border-radius: 5px;
             border: 1px solid var(--border);
             display: flex;
@@ -276,7 +276,7 @@
         }
 
         /* Section Styles */
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .section-title { font-size: 1.1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
         .counter-badge { background: var(--bg); color: var(--text-sec); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; }
 
@@ -756,7 +756,7 @@
         @media (max-width: 600px) {
             .app-header { padding: 0 15px; }
             .brand span { display: none; } 
-            .nav-tabs { gap: 15px; }
+            .nav-tabs { gap: 60px; }
             .content-area { padding: 15px; }
             .fab { bottom: 20px; right: 20px; }
             .metrics-grid { grid-template-columns: 1fr; }
@@ -775,6 +775,15 @@
                 justify-content: flex-end;
             }
         }
+        
+        /* Estilo para botão de gerar tarefas */
+.icon-btn.green {
+    color: #10b981;
+}
+
+.icon-btn.green:hover {
+    background: #10b98120;
+}
         
         /* ============================================
    RESPONSIVIDADE COMPLETA - MOBILE FIRST
@@ -2864,6 +2873,23 @@ window.updateTaskFields = () => {
                 }
                 
                 div.innerHTML = `
+    <h4>${escapeHtml(comp.name)} ${badgeText ? `<span class="company-badge ${badgeClass}">${badgeText}</span>` : ''}</h4>
+    ${comp.cnpj ? `<p><i data-lucide="file-text" width="12"></i> ${escapeHtml(comp.cnpj)}</p>` : ''}
+    ${comp.phone ? `<p><i data-lucide="phone" width="12"></i> ${escapeHtml(comp.phone)}</p>` : ''}
+    ${comp.type ? `<p><i data-lucide="building" width="12"></i> ${comp.type}</p>` : ''}
+    ${comp.regime ? `<p><i data-lucide="trending-up" width="12"></i> ${comp.regime}</p>` : ''}
+    ${comp.cnae ? `<p><i data-lucide="hash" width="12"></i> CNAE: ${comp.cnae}</p>` : ''}
+    <div class="company-actions">
+        <button class="icon-btn" title="Gerar tarefas automáticas" onclick="generateAllCompanyTasks('${comp.id}')">
+            <i data-lucide="refresh-cw" width="16"></i>
+        </button>
+        <button class="icon-btn" onclick='openCompanyModal(${JSON.stringify(comp).replace(/'/g, "&#39;")})'>
+            <i data-lucide="pencil" width="16"></i>
+        </button>
+    </div>
+`;
+                
+                div.innerHTML = `
                     <h4>${escapeHtml(comp.name)} ${badgeText ? `<span class="company-badge ${badgeClass}">${badgeText}</span>` : ''}</h4>
                     ${comp.cnpj ? `<p><i data-lucide="file-text" width="12"></i> ${escapeHtml(comp.cnpj)}</p>` : ''}
                     ${comp.phone ? `<p><i data-lucide="phone" width="12"></i> ${escapeHtml(comp.phone)}</p>` : ''}
@@ -2936,47 +2962,238 @@ window.updateTaskFields = () => {
             lucide.createIcons();
         };
 
-        window.saveTask = async () => {
-            const id = document.getElementById('task-id').value;
-            const companyId = document.getElementById('task-company').value;
-            const title = document.getElementById('task-title').value;
-            const description = document.getElementById('task-desc').value;
-            const deadline = document.getElementById('task-deadline').value;
-            
-            // NOVOS CAMPOS
-            const category = document.getElementById('task-category').value;
-            const obligation = document.getElementById('task-obligation').value;
-            const periodicity = document.getElementById('task-periodicity').value;
-            const reference = document.getElementById('task-reference').value;
-            const value = document.getElementById('task-value').value;
-            const paymentStatus = document.getElementById('task-payment-status').value;
-            const fileLink = document.getElementById('task-file-link').value;
-            const internalNotes = document.getElementById('task-internal-notes').value;
+// Função para sugerir prazos baseados na obrigação
+window.saveTask = async () => {
+    const id = document.getElementById('task-id').value;
+    const companyId = document.getElementById('task-company').value;
+    const title = document.getElementById('task-title').value;
+    const description = document.getElementById('task-desc').value;
+    const deadline = document.getElementById('task-deadline').value;
+    
+    // NOVOS CAMPOS
+    const category = document.getElementById('task-category').value;
+    const obligation = document.getElementById('task-obligation').value;
+    const periodicity = document.getElementById('task-periodicity').value;
+    const reference = document.getElementById('task-reference').value;
+    const value = document.getElementById('task-value').value;
+    const paymentStatus = document.getElementById('task-payment-status').value;
+    const fileLink = document.getElementById('task-file-link').value;
+    const internalNotes = document.getElementById('task-internal-notes').value;
 
-            if (!companyId || !title || !category) return showToast('Campos obrigatórios faltando', 'error');
+    if (!companyId || !title || !category) return showToast('Campos obrigatórios faltando', 'error');
 
-            const data = { 
-                companyId, title, description, deadline,
-                // Novos campos
-                category, obligation, periodicity, reference, 
-                value: value ? parseFloat(value) : null,
-                paymentStatus, fileLink, internalNotes,
-                updatedAt: serverTimestamp() 
-            };
+    const data = { 
+        companyId, title, description, deadline,
+        // Novos campos
+        category, obligation, periodicity, reference, 
+        value: value ? parseFloat(value) : null,
+        paymentStatus, fileLink, internalNotes,
+        updatedAt: serverTimestamp() 
+    };
+    
+    try {
+        if (id) {
+            // EDITANDO tarefa existente - não gera recorrentes
+            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), data);
+            showToast('Tarefa atualizada', 'success');
+        } else {
+            // NOVA tarefa - pode gerar recorrentes
+            data.completed = false;
+            data.createdAt = serverTimestamp();
             
-            try {
-                if (id) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), data);
-                    showToast('Tarefa atualizada', 'success');
+            // Salvar a tarefa principal
+            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), data);
+            
+            // Se for tarefa recorrente, criar as futuras automaticamente
+            if (periodicity !== 'UNICA') {
+                const createdCount = await generateRecurringTasks(data, periodicity, reference);
+                if (createdCount > 0) {
+                    showToast(`Tarefa criada + ${createdCount} futuras geradas automaticamente!`, 'success');
                 } else {
-                    data.completed = false;
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), data);
                     showToast('Tarefa criada', 'success');
                 }
-                closeModals();
-            } catch(e) { console.error(e); showToast('Erro ao salvar', 'error'); }
-        };
+            } else {
+                showToast('Tarefa criada', 'success');
+            }
+        }
+        closeModals();
+    } catch(e) { 
+        console.error(e); 
+        showToast('Erro ao salvar', 'error'); 
+    }
+};
+
+// FUNÇÃO NOVA: Gerar tarefas recorrentes automaticamente
+async function generateRecurringTasks(baseTask, periodicity, reference) {
+    if (!periodicity || periodicity === 'UNICA') return 0;
+    
+    const [refAno, refMes] = reference.split('-').map(Number);
+    let createdCount = 0;
+    
+    // Quantas tarefas futuras criar
+    let futureCount = 0;
+    if (periodicity === 'MENSAL') futureCount = 11; // Próximos 11 meses (total 12)
+    if (periodicity === 'TRIMESTRAL') futureCount = 3; // Próximos 3 trimestres (total 4)
+    if (periodicity === 'ANUAL') futureCount = 1; // Próximo ano (total 2)
+    
+    for (let i = 1; i <= futureCount; i++) {
+        try {
+            // Clonar a tarefa base
+            const newTask = { ...baseTask };
+            
+            // Calcular nova referência
+            let newRefAno = refAno;
+            let newRefMes = refMes;
+            
+            if (periodicity === 'MENSAL') {
+                newRefMes += i;
+                if (newRefMes > 12) {
+                    newRefMes -= 12;
+                    newRefAno += 1;
+                }
+            } else if (periodicity === 'TRIMESTRAL') {
+                newRefMes += (i * 3);
+                while (newRefMes > 12) {
+                    newRefMes -= 12;
+                    newRefAno += 1;
+                }
+            } else if (periodicity === 'ANUAL') {
+                newRefAno += i;
+            }
+            
+            const newReference = `${newRefAno}-${newRefMes.toString().padStart(2, '0')}`;
+            
+            // Calcular novo prazo baseado na obrigação
+            const novoPrazo = calculateNextDeadline(baseTask.obligation, newReference);
+            
+            // Atualizar dados da nova tarefa
+            newTask.reference = newReference;
+            newTask.deadline = novoPrazo;
+            newTask.title = `${baseTask.obligation || 'Tarefa'} - ${newReference}`;
+            newTask.createdAt = serverTimestamp();
+            newTask.updatedAt = serverTimestamp();
+            newTask.completed = false;
+            
+            // Salvar no banco
+            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), newTask);
+            createdCount++;
+            
+        } catch (error) {
+            console.error(`Erro ao criar tarefa recorrente ${i}:`, error);
+        }
+    }
+    
+    return createdCount;
+}
+
+// FUNÇÃO: Gerar todas as obrigações recorrentes para uma empresa
+window.generateAllCompanyTasks = async (companyId) => {
+    const company = allCompanies.find(c => c.id === companyId);
+    if (!company) {
+        showToast('Empresa não encontrada', 'error');
+        return;
+    }
+    
+    // Mapear obrigações por regime tributário
+    const obrigacoesPorRegime = {
+        'SIMPLES': [
+            { obligation: 'DAS', periodicity: 'MENSAL', category: 'FISCAL' }
+        ],
+        'PRESUMIDO': [
+            { obligation: 'IRPJ', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
+            { obligation: 'CSLL', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
+            { obligation: 'PIS_COFINS', periodicity: 'MENSAL', category: 'FISCAL' }
+        ],
+        'REAL': [
+            { obligation: 'IRPJ', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
+            { obligation: 'CSLL', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
+            { obligation: 'EFD', periodicity: 'MENSAL', category: 'FISCAL' }
+        ],
+        'MEI': [
+            { obligation: 'DAS', periodicity: 'MENSAL', category: 'FISCAL' }
+        ]
+    };
+    
+    // Se tem funcionários, adiciona GPS
+    if (company.hasEmployees === 'true') {
+        obrigacoesPorRegime[company.regime]?.push(
+            { obligation: 'GPS', periodicity: 'MENSAL', category: 'TRABALHISTA' }
+        );
+    }
+    
+    const obrigacoes = obrigacoesPorRegime[company.regime] || [];
+    
+    if (obrigacoes.length === 0) {
+        showToast(`Nenhuma obrigação definida para regime ${company.regime}`, 'warning');
+        return;
+    }
+    
+    let createdCount = 0;
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth() + 1;
+    const anoAtual = hoje.getFullYear();
+    
+    for (const obrig of obrigacoes) {
+        try {
+            const reference = `${anoAtual}-${mesAtual.toString().padStart(2, '0')}`;
+            const deadline = calculateNextDeadline(obrig.obligation, reference);
+            
+            const baseTask = {
+                companyId: companyId,
+                title: `${obrig.obligation} - ${reference}`,
+                description: `Obrigação ${oblig.periodicity.toLowerCase()} do regime ${company.regime}`,
+                deadline: deadline,
+                category: obrig.category,
+                obligation: obrig.obligation,
+                periodicity: obrig.periodicity,
+                reference: reference,
+                value: null,
+                paymentStatus: 'PENDENTE',
+                fileLink: '',
+                internalNotes: `Gerada automaticamente para ${company.name}`,
+                completed: false,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            };
+            
+            // Criar tarefa principal
+            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), baseTask);
+            
+            // Gerar recorrentes
+            const recorrentesCount = await generateRecurringTasks(baseTask, obrig.periodicity, reference);
+            createdCount += (1 + recorrentesCount);
+            
+        } catch (error) {
+            console.error(`Erro ao criar ${obrig.obligation}:`, error);
+        }
+    }
+    
+    showToast(`${createdCount} tarefas geradas para ${company.name}!`, 'success');
+};
+
+// FUNÇÃO AUXILIAR: Calcular próximo prazo
+function calculateNextDeadline(obligation, reference) {
+    const [ano, mes] = reference.split('-').map(Number);
+    
+    // Datas de vencimento padrão
+    const vencimentosPadrao = {
+        'DAS': 20,
+        'GPS': 20,
+        'IRPJ': 30,
+        'CSLL': 30,
+        'PIS_COFINS': 20,
+        'EFD': 15,
+        'DIRF': 30,
+        'DCTF': 30,
+        'RAIS': 30,
+        'CAGED': 20,
+        'SEFIP': 20,
+        'DARF': 30
+    };
+    
+    const dia = vencimentosPadrao[obligation] || 20;
+    return `${ano}-${mes.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+}
 
         window.toggleTask = async (id, status) => {
             try {
@@ -3194,4 +3411,4 @@ window.updateTaskFields = () => {
         }, 100);
     </script>
 </body>
-    </html>
+</html>
