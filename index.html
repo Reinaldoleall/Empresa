@@ -1077,6 +1077,193 @@
     }
 }
 
+/* ============================================
+   ESTILOS PARA CARDS COM PRESSÃO LONGA E PINS
+   ============================================ */
+
+/* Efeito visual durante pressão longa */
+.card.pressing {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 2px var(--primary);
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+/* Pins/etiquetas nos cards */
+.card-pins {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 100px;
+    justify-content: flex-end;
+}
+
+.pin-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+    position: relative;
+}
+
+.pin-badge:hover {
+    transform: scale(1.2);
+    z-index: 10;
+}
+
+/* Tooltip para pins */
+.pin-badge::after {
+    content: attr(data-title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s;
+    z-index: 100;
+}
+
+.pin-badge:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Modal de nota rápida - estilos específicos */
+#card-note-content {
+    padding: 10px;
+}
+
+.note-section {
+    margin-bottom: 20px;
+}
+
+.note-section-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-sec);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.note-section-content {
+    background: var(--bg);
+    padding: 10px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+.note-section-content p {
+    margin-bottom: 5px;
+}
+
+/* Grid de cores para seleção */
+.colors-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+    padding: 10px;
+}
+
+.color-option {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+}
+
+.color-option.selected {
+    border-color: var(--text-main);
+    transform: scale(1.1);
+}
+
+/* Lista de pins no modal de nota */
+.pins-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.pin-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    background: var(--bg);
+    border-radius: var(--radius);
+    border-left: 4px solid #000;
+}
+
+.pin-color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.pin-content {
+    flex: 1;
+}
+
+.pin-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+}
+
+.pin-comment {
+    font-size: 0.85rem;
+    color: var(--text-sec);
+}
+
+.pin-date {
+    font-size: 0.75rem;
+    color: var(--text-sec);
+    margin-top: 3px;
+}
+
+/* Ajuste para mobile */
+@media (max-width: 600px) {
+    .colors-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+    
+    .card-pins {
+        max-width: 60px;
+    }
+    
+    .pin-badge {
+        width: 20px;
+        height: 20px;
+        font-size: 0.7rem;
+    }
+}
+
 /* Ajustes específicos para modais em mobile */
 @media (max-width: 768px) {
     /* Modal de tarefa - organizar campos */
@@ -1746,1669 +1933,2138 @@ html, body {
             </div>
         </div>
     </div>
+    
+    <!-- MODAL: NOTA RÁPIDA DO CARD -->
+<div id="modal-card-note" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3>Nota Rápida</h3>
+            <button onclick="closeModals()"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+            <div id="card-note-content">
+                <!-- Conteúdo será preenchido via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: PIN/ETIQUETA -->
+<div id="modal-pin" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 id="modal-pin-title">Nova Etiqueta</h3>
+            <button onclick="closeModals()"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="pin-id">
+            <input type="hidden" id="pin-target-type"> <!-- 'task' ou 'company' -->
+            <input type="hidden" id="pin-target-id">
+            
+            <div class="input-group">
+                <label>Título da Etiqueta *</label>
+                <input type="text" id="pin-title" class="std-input" placeholder="Ex: Pendência, Importante, Revisar...">
+            </div>
+
+            <div class="input-group">
+                <label>Cor da Etiqueta</label>
+                <div id="pin-colors" class="colors-grid">
+                    <!-- Cores serão geradas via JS -->
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Comentário</label>
+                <textarea id="pin-comment" class="std-input" rows="4" placeholder="Adicione um comentário ou observação..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="btn-delete-pin" class="hidden" style="color: var(--danger); margin-right: auto; font-weight: 600;" onclick="confirmDeletePin()">
+                <i data-lucide="trash-2" width="16"></i> Excluir Etiqueta
+            </button>
+            <button onclick="closeModals()" style="color: var(--text-sec); font-weight: 600; padding: 0 15px;">Cancelar</button>
+            <button onclick="savePin()" class="btn-main" style="width: auto; padding: 10px 24px;">Salvar Etiqueta</button>
+        </div>
+    </div>
+</div>
 
     <!-- LOGIC -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyByyM8RvGNM5pyrQIQ7nCH6mmgYAIpq0bc",
-            authDomain: "rifas-c414b.firebaseapp.com",
-            projectId: "rifas-c414b",
-            storageBucket: "rifas-c414b.firebasestorage.app",
-            messagingSenderId: "770195193538",
-            appId: "1:770195193538:web:48e585ac5661d27f3dc55b"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
-
-        // STATE
-        let currentUser = null;
-        let isLoginMode = true;
-        let currentTab = 'tasks';
-        let allTasks = [];
-        let allCompanies = [];
-        let unsubTasks = null;
-        let unsubCompanies = null;
-        let currentTaskFilter = 'all'; // 'all', 'today', 'urgent', 'completed'
-        let deletePending = { type: null, id: null }; // Para controlar exclusões pendentes
-        let selectedCompanyId = null; // Para controlar qual empresa está sendo filtrada
-        let taskToHighlight = null; // Para controlar qual tarefa destacar ao navegar
-
-        // AUTH LOGIC
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app-screen').classList.remove('hidden');
-                subscribeData();
-                lucide.createIcons(); // Recriar ícones após mudança de tela
-            } else {
-                document.getElementById('app-screen').classList.add('hidden');
-                document.getElementById('auth-screen').classList.remove('hidden');
-                if (unsubTasks) unsubTasks();
-                if (unsubCompanies) unsubCompanies();
-                lucide.createIcons(); // Recriar ícones após mudança de tela
-            }
-        });
-
-        document.getElementById('auth-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const btn = document.getElementById('auth-btn');
-            
-            btn.innerHTML = '<i data-lucide="loader-2" width="18"></i> Processando...';
-            btn.disabled = true;
-
-            try {
-                if (isLoginMode) {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } else {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    showToast('Conta criada com sucesso!', 'success');
-                }
-            } catch (err) {
-                console.error(err);
-                let msg = "Erro na autenticação";
-                if(err.code === 'auth/wrong-password') msg = "Senha incorreta";
-                if(err.code === 'auth/user-not-found') msg = "Usuário não encontrado";
-                if(err.code === 'auth/weak-password') msg = "Senha muito fraca (min 6 digitos)";
-                if(err.code === 'auth/email-already-in-use') msg = "E-mail já cadastrado";
-                showToast(msg, 'error');
-            } finally {
-                updateAuthButton();
-                btn.disabled = false;
-                lucide.createIcons();
-            }
-        });
-
-        // Função para atualizar o botão de autenticação
-        function updateAuthButton() {
-            const authBtn = document.getElementById('auth-btn');
-            const authBtnText = document.getElementById('auth-btn-text');
-            
-            if (isLoginMode) {
-                authBtnText.textContent = 'Entrar no Sistema';
-                authBtn.innerHTML = '<i data-lucide="log-in" width="18"></i> Entrar no Sistema';
-            } else {
-                authBtnText.textContent = 'Criar Conta';
-                authBtn.innerHTML = '<i data-lucide="user-plus" width="18"></i> Criar Conta';
-            }
-        }
-
-        // Função para atualizar o toggle de modo
-        function updateAuthToggle() {
-            const toggleText = document.getElementById('toggle-auth-text');
-            const toggleBtn = document.getElementById('toggle-auth-mode');
-            
-            if (isLoginMode) {
-                toggleText.textContent = 'Criar uma nova conta';
-                toggleBtn.innerHTML = '<i data-lucide="user-plus" width="14"></i> Criar uma nova conta';
-            } else {
-                toggleText.textContent = 'Já tenho uma conta';
-                toggleBtn.innerHTML = '<i data-lucide="log-in" width="14"></i> Já tenho uma conta';
-            }
-        }
-
-        document.getElementById('toggle-auth-mode').addEventListener('click', (e) => {
-            e.preventDefault();
-            isLoginMode = !isLoginMode;
-            updateAuthButton();
-            updateAuthToggle();
-            lucide.createIcons();
-        });
-
-        // Toggle password visibility
-        document.getElementById('toggle-password')?.addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            const icon = this.querySelector('i');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.setAttribute('data-lucide', 'eye-off');
-                this.innerHTML = '<i data-lucide="eye-off" width="14"></i> Ocultar senha';
-            } else {
-                passwordInput.type = 'password';
-                icon.setAttribute('data-lucide', 'eye');
-                this.innerHTML = '<i data-lucide="eye" width="14"></i> Mostrar senha';
-            }
-            lucide.createIcons();
-        });
-
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            if (confirm('Deseja realmente sair do sistema?')) {
-                signOut(auth);
-            }
-        });
-
-        // NAVIGATION
-        window.switchTab = (tab) => {
-            currentTab = tab;
-            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
-            document.querySelector(`.nav-tab[onclick="switchTab('${tab}')"]`).classList.add('active');
-            
-            if (tab === 'tasks') {
-                document.getElementById('view-tasks').classList.remove('hidden');
-                document.getElementById('view-companies').classList.add('hidden');
-                document.getElementById('view-dashboard').classList.add('hidden');
-                renderTasks(); // Re-render tasks when switching to tasks tab
-                
-                // Se há uma tarefa para destacar, destacar ela
-                if (taskToHighlight) {
-                    setTimeout(() => {
-                        highlightTask(taskToHighlight);
-                        taskToHighlight = null; // Resetar após destacar
-                    }, 100);
-                }
-            } else if (tab === 'companies') {
-                document.getElementById('view-tasks').classList.add('hidden');
-                document.getElementById('view-companies').classList.remove('hidden');
-                document.getElementById('view-dashboard').classList.add('hidden');
-            } else if (tab === 'dashboard') {
-                document.getElementById('view-tasks').classList.add('hidden');
-                document.getElementById('view-companies').classList.add('hidden');
-                document.getElementById('view-dashboard').classList.remove('hidden');
-                updateDashboardCounters();
-            }
-            lucide.createIcons();
-        };
-
-        window.handleFabClick = () => {
-            if (currentTab === 'tasks') openTaskModal();
-            else if (currentTab === 'companies') openCompanyModal();
-            else openCompanyModal(); // Dashboard também abre empresa
-        };
-
-        // Função para mostrar/ocultar campos baseados no regime
-        window.updateRegimeFields = () => {
-            const regime = document.getElementById('company-regime').value;
-            const presumidoFields = document.getElementById('presumido-fields');
-            
-            if (regime === 'PRESUMIDO') {
-                presumidoFields.style.display = 'block';
-            } else {
-                presumidoFields.style.display = 'none';
-            }
-        };
-
-        // Função para sugerir prazos baseados na obrigação
-window.updateTaskFields = () => {
-    console.log("updateTaskFields() chamada!"); // DEBUG
-    
-    const obligation = document.getElementById('task-obligation').value;
-    const deadlineInput = document.getElementById('task-deadline');
-    const referenceInput = document.getElementById('task-reference');
-    
-    console.log("Obrigação selecionada:", obligation); // DEBUG
-    
-    // Datas de vencimento padrão
-    const vencimentosPadrao = {
-        'DAS': 20, // Dia 20 do mês seguinte
-        'GPS': 20, // Dia 20 do mês seguinte
-        'IRPJ': 30, // Último dia do mês seguinte
-        'CSLL': 30,
-        'PIS_COFINS': 20,
-        'EFD': 15,
-        'DIRF': 30 // Abril
+    const firebaseConfig = {
+        apiKey: "AIzaSyByyM8RvGNM5pyrQIQ7nCH6mmgYAIpq0bc",
+        authDomain: "rifas-c414b.firebaseapp.com",
+        projectId: "rifas-c414b",
+        storageBucket: "rifas-c414b.firebasestorage.app",
+        messagingSenderId: "770195193538",
+        appId: "1:770195193538:web:48e585ac5661d27f3dc55b"
     };
-    
-    if (vencimentosPadrao[obligation]) {
-        const hoje = new Date();
-        let mes = hoje.getMonth() + 1; // Mês atual (0-indexed)
-        let ano = hoje.getFullYear();
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
+
+    // STATE
+    let currentUser = null;
+    let isLoginMode = true;
+    let currentTab = 'tasks';
+    let allTasks = [];
+    let allCompanies = [];
+    let allPins = []; // Array para armazenar todas as etiquetas
+    let unsubTasks = null;
+    let unsubCompanies = null;
+    let unsubPins = null; // Para unsubscribe do Firestore
+    let currentTaskFilter = 'all'; // 'all', 'today', 'urgent', 'completed'
+    let deletePending = { type: null, id: null }; // Para controlar exclusões pendentes
+    let selectedCompanyId = null; // Para controlar qual empresa está sendo filtrada
+    let taskToHighlight = null; // Para controlar qual tarefa destacar ao navegar
+    let pressTimer = null; // Timer para pressão longa
+    let currentPressingCard = null; // Card atualmente pressionado
+    let currentNoteItem = null; // Item atual para nota
+
+    // Cores disponíveis para pins
+    const PIN_COLORS = [
+        '#ef4444', // Vermelho
+        '#f59e0b', // Laranja
+        '#10b981', // Verde
+        '#3b82f6', // Azul
+        '#8b5cf6', // Roxo
+        '#ec4899', // Rosa
+        '#6366f1', // Índigo
+        '#14b8a6', // Turquesa
+        '#84cc16', // Lima
+        '#f97316', // Laranja escuro
+        '#06b6d4', // Ciano
+        '#8b5cf6'  // Violeta
+    ];
+
+    // ============================================
+    // FUNÇÕES PARA PRESSÃO LONGA (2 SEGUNDOS)
+    // ============================================
+
+    // Inicializar detecção de pressão longa em todos os cards
+    function initLongPress() {
+        document.addEventListener('mousedown', startPressTimer);
+        document.addEventListener('touchstart', startPressTimer);
         
-        console.log("Hoje:", hoje, "Mês:", mes, "Ano:", ano); // DEBUG
-        
-        // Para DAS/GPS: vence no dia X do mês seguinte
-        if (obligation === 'DAS' || obligation === 'GPS') {
-            mes += 1;
-            if (mes > 12) {
-                mes = 1;
-                ano += 1;
-            }
-        }
-        
-        // Formatar como YYYY-MM-DD
-        const dia = vencimentosPadrao[obligation];
-        const dataFormatada = `${ano}-${mes.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
-        
-        console.log("Data calculada:", dataFormatada); // DEBUG
-        
-        deadlineInput.value = dataFormatada;
-        
-        // Preencher referência também
-        referenceInput.value = `${ano}-${mes.toString().padStart(2, '0')}`;
-        
-        console.log("Campo deadline preenchido com:", deadlineInput.value); // DEBUG
-    } else {
-        console.log("Nenhuma obrigação reconhecida ou vazia"); // DEBUG
+        document.addEventListener('mouseup', cancelPressTimer);
+        document.addEventListener('mouseleave', cancelPressTimer);
+        document.addEventListener('touchend', cancelPressTimer);
+        document.addEventListener('touchcancel', cancelPressTimer);
     }
-    
-    // Gerar título automático
-    generateTaskTitle();
-};
 
-        // Função para gerar título automático de tarefa
-        function generateTaskTitle() {
-            const companySelect = document.getElementById('task-company');
-            const companyId = companySelect.value;
-            const obligation = document.getElementById('task-obligation').value;
-            const reference = document.getElementById('task-reference').value;
-            
-            if (companyId && obligation && reference) {
+    // Iniciar timer para pressão longa
+    function startPressTimer(e) {
+        // Encontrar o card mais próximo
+        const card = e.target.closest('.card, .company-card');
+        if (!card) return;
+        
+        currentPressingCard = card;
+        
+        pressTimer = setTimeout(() => {
+            showCardNote(card);
+        }, 2000); // 2 segundos
+        
+        // Adicionar efeito visual
+        card.classList.add('pressing');
+    }
+
+    // Cancelar timer se soltar antes de 2 segundos
+    function cancelPressTimer(e) {
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+        
+        if (currentPressingCard) {
+            currentPressingCard.classList.remove('pressing');
+            currentPressingCard = null;
+        }
+    }
+
+    // Mostrar modal com nota do card
+    function showCardNote(card) {
+        currentPressingCard = null;
+        card.classList.remove('pressing');
+        
+        // Verificar se é card de tarefa ou empresa
+        if (card.classList.contains('card')) {
+            // É uma tarefa
+            const taskId = card.querySelector('.check-btn')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            if (taskId) {
+                const task = allTasks.find(t => t.id === taskId);
+                if (task) openCardNoteModal(task, 'task');
+            }
+        } else if (card.classList.contains('company-card')) {
+            // É uma empresa
+            const companyId = card.querySelector('.icon-btn')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            if (companyId) {
                 const company = allCompanies.find(c => c.id === companyId);
-                const obligationNames = {
-                    'DAS': 'DAS - Simples Nacional',
-                    'GPS': 'GPS - Guia da Previdência',
-                    'IRPJ': 'IRPJ - Imposto de Renda',
-                    'CSLL': 'CSLL - Contribuição Social',
-                    'PIS_COFINS': 'PIS/COFINS',
-                    'EFD': 'EFD Contribuições',
-                    'DIRF': 'DIRF - Declaração IRRF',
-                    'DCTF': 'DCTF',
-                    'RAIS': 'RAIS',
-                    'CAGED': 'CAGED',
-                    'SEFIP': 'SEFIP',
-                    'DARF': 'DARF'
-                };
-                
-                const title = `${obligationNames[obligation] || obligation} - ${reference}`;
-                document.getElementById('task-title').value = title;
+                if (company) openCardNoteModal(company, 'company');
             }
         }
+    }
 
-        // Adicionar eventos para gerar título automático
-        document.addEventListener('DOMContentLoaded', function() {
-            // Atualizar título quando selecionar obrigação
-            const obligationSelect = document.getElementById('task-obligation');
-            const referenceInput = document.getElementById('task-reference');
+    // Abrir modal de nota do card
+    function openCardNoteModal(item, type) {
+        currentNoteItem = { item, type };
+        
+        const modal = document.getElementById('modal-card-note');
+        const contentDiv = document.getElementById('card-note-content');
+        
+        let html = '';
+        
+        if (type === 'task') {
+            const task = item;
+            const company = allCompanies.find(c => c.id === task.companyId);
             
-            if (obligationSelect) {
-                obligationSelect.addEventListener('change', generateTaskTitle);
+            html = `
+                <div class="note-section">
+                    <div class="note-section-title">
+                        <i data-lucide="info" width="14"></i> Informações da Tarefa
+                    </div>
+                    <div class="note-section-content">
+                        <p><strong>Título:</strong> ${escapeHtml(task.title)}</p>
+                        <p><strong>Empresa:</strong> ${escapeHtml(company?.name || 'Não vinculada')}</p>
+                        <p><strong>Categoria:</strong> ${task.category || 'Não definida'}</p>
+                        <p><strong>Obrigação:</strong> ${task.obligation || 'Não especificada'}</p>
+                        ${task.deadline ? `<p><strong>Prazo:</strong> ${new Date(task.deadline).toLocaleDateString('pt-BR')}</p>` : ''}
+                        ${task.description ? `<p><strong>Descrição:</strong> ${escapeHtml(task.description)}</p>` : ''}
+                        ${task.value ? `<p><strong>Valor:</strong> R$ ${parseFloat(task.value).toFixed(2)}</p>` : ''}
+                        ${task.paymentStatus ? `<p><strong>Status Pagamento:</strong> ${task.paymentStatus}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        } else if (type === 'company') {
+            const company = item;
+            
+            html = `
+                <div class="note-section">
+                    <div class="note-section-title">
+                        <i data-lucide="building-2" width="14"></i> Informações da Empresa
+                    </div>
+                    <div class="note-section-content">
+                        <p><strong>Nome:</strong> ${escapeHtml(company.name)}</p>
+                        ${company.cnpj ? `<p><strong>CNPJ:</strong> ${escapeHtml(company.cnpj)}</p>` : ''}
+                        ${company.type ? `<p><strong>Tipo:</strong> ${company.type}</p>` : ''}
+                        ${company.regime ? `<p><strong>Regime:</strong> ${company.regime}</p>` : ''}
+                        ${company.cnae ? `<p><strong>CNAE:</strong> ${company.cnae}</p>` : ''}
+                        ${company.phone ? `<p><strong>Telefone:</strong> ${escapeHtml(company.phone)}</p>` : ''}
+                        ${company.email ? `<p><strong>E-mail:</strong> ${escapeHtml(company.email)}</p>` : ''}
+                        ${company.responsible ? `<p><strong>Responsável:</strong> ${escapeHtml(company.responsible)}</p>` : ''}
+                        ${company.address ? `<p><strong>Endereço:</strong> ${escapeHtml(company.address)}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Adicionar seção de pins/etiquetas
+        const pins = allPins.filter(pin => 
+            pin.targetType === type && pin.targetId === item.id
+        );
+        
+        if (pins.length > 0) {
+            html += `
+                <div class="note-section">
+                    <div class="note-section-title">
+                        <i data-lucide="tag" width="14"></i> Etiquetas (${pins.length})
+                    </div>
+                    <div class="pins-list">
+                        ${pins.map(pin => `
+                            <div class="pin-item" style="border-left-color: ${pin.color || '#3b82f6'}">
+                                <div class="pin-color-dot" style="background: ${pin.color || '#3b82f6'}"></div>
+                                <div class="pin-content">
+                                    <div class="pin-title">${escapeHtml(pin.title)}</div>
+                                    ${pin.comment ? `<div class="pin-comment">${escapeHtml(pin.comment)}</div>` : ''}
+                                    <div class="pin-date">${new Date(pin.createdAt?.seconds * 1000).toLocaleDateString('pt-BR')}</div>
+                                </div>
+                                <button class="icon-btn" onclick="editPin('${pin.id}')" style="padding: 4px;">
+                                    <i data-lucide="edit" width="14"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Adicionar botão para nova etiqueta
+        html += `
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="openPinModal('${type}', '${item.id}')" class="btn-main" style="width: auto; padding: 10px 20px;">
+                    <i data-lucide="tag" width="16"></i> Adicionar Etiqueta
+                </button>
+            </div>
+        `;
+        
+        contentDiv.innerHTML = html;
+        modal.classList.remove('hidden');
+        lucide.createIcons();
+    }
+
+    // ============================================
+    // FUNÇÕES PARA PINS/ETIQUETAS
+    // ============================================
+
+    // Inicializar sistema de pins no Firestore
+    function initPinsSystem() {
+        if (!currentUser) return;
+        
+        const pinsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'pins');
+        unsubPins = onSnapshot(pinsRef, (snap) => {
+            allPins = [];
+            snap.forEach(doc => allPins.push({ id: doc.id, ...doc.data() }));
+            
+            // Atualizar pins nos cards
+            updateCardsPins();
+        });
+    }
+
+    // Atualizar pins visíveis nos cards
+    function updateCardsPins() {
+        // Atualizar pins nas tarefas
+        document.querySelectorAll('.card').forEach(card => {
+            updateCardPins(card, 'task');
+        });
+        
+        // Atualizar pins nas empresas
+        document.querySelectorAll('.company-card').forEach(card => {
+            updateCardPins(card, 'company');
+        });
+    }
+
+    // Atualizar pins de um card específico
+    function updateCardPins(card, type) {
+        // Limpar pins existentes
+        const existingPins = card.querySelector('.card-pins');
+        if (existingPins) existingPins.remove();
+        
+        // Encontrar ID do item
+        let itemId = null;
+        if (type === 'task') {
+            itemId = card.querySelector('.check-btn')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+        } else if (type === 'company') {
+            itemId = card.querySelector('.icon-btn')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+        }
+        
+        if (!itemId) return;
+        
+        // Filtrar pins deste item
+        const itemPins = allPins.filter(pin => 
+            pin.targetType === type && pin.targetId === itemId
+        );
+        
+        if (itemPins.length === 0) return;
+        
+        // Criar container de pins
+        const pinsContainer = document.createElement('div');
+        pinsContainer.className = 'card-pins';
+        
+        // Adicionar pins (máximo 3 para não poluir visualmente)
+        itemPins.slice(0, 3).forEach(pin => {
+            const pinBadge = document.createElement('div');
+            pinBadge.className = 'pin-badge';
+            pinBadge.style.backgroundColor = pin.color || '#3b82f6';
+            pinBadge.setAttribute('data-title', pin.title);
+            pinBadge.setAttribute('onclick', `event.stopPropagation(); openPinModal('${type}', '${itemId}', '${pin.id}')`);
+            
+            // Adicionar ícone se tiver comentário
+            if (pin.comment) {
+                const icon = document.createElement('i');
+                icon.setAttribute('data-lucide', 'message-circle');
+                pinBadge.appendChild(icon);
+            } else {
+                pinBadge.innerHTML = `<i data-lucide="tag"></i>`;
             }
-            if (referenceInput) {
-                referenceInput.addEventListener('change', generateTaskTitle);
+            
+            pinsContainer.appendChild(pinBadge);
+        });
+        
+        // Se houver mais de 3 pins, adicionar indicador
+        if (itemPins.length > 3) {
+            const moreBadge = document.createElement('div');
+            moreBadge.className = 'pin-badge';
+            moreBadge.style.backgroundColor = '#6b7280';
+            moreBadge.setAttribute('data-title', `${itemPins.length - 3} etiquetas a mais`);
+            moreBadge.setAttribute('onclick', `event.stopPropagation(); showCardNote(this.closest('.card, .company-card'))`);
+            moreBadge.innerHTML = `+${itemPins.length - 3}`;
+            pinsContainer.appendChild(moreBadge);
+        }
+        
+        card.style.position = 'relative';
+        card.appendChild(pinsContainer);
+        lucide.createIcons();
+    }
+
+    // Abrir modal para criar/editar pin
+    window.openPinModal = (targetType, targetId, pinId = null) => {
+        const modal = document.getElementById('modal-pin');
+        
+        // Configurar cores disponíveis
+        const colorsGrid = document.getElementById('pin-colors');
+        colorsGrid.innerHTML = '';
+        
+        PIN_COLORS.forEach(color => {
+            const colorDiv = document.createElement('div');
+            colorDiv.className = 'color-option';
+            colorDiv.style.backgroundColor = color;
+            colorDiv.onclick = () => selectPinColor(color);
+            colorsGrid.appendChild(colorDiv);
+        });
+        
+        if (pinId) {
+            // Editar pin existente
+            const pin = allPins.find(p => p.id === pinId);
+            if (pin) {
+                document.getElementById('modal-pin-title').textContent = 'Editar Etiqueta';
+                document.getElementById('pin-id').value = pin.id;
+                document.getElementById('pin-title').value = pin.title;
+                document.getElementById('pin-comment').value = pin.comment || '';
+                document.getElementById('pin-target-type').value = pin.targetType;
+                document.getElementById('pin-target-id').value = pin.targetId;
+                document.getElementById('btn-delete-pin').classList.remove('hidden');
+                
+                // Selecionar cor atual
+                selectPinColor(pin.color || PIN_COLORS[0]);
+            }
+        } else {
+            // Novo pin
+            document.getElementById('modal-pin-title').textContent = 'Nova Etiqueta';
+            document.getElementById('pin-id').value = '';
+            document.getElementById('pin-title').value = '';
+            document.getElementById('pin-comment').value = '';
+            document.getElementById('pin-target-type').value = targetType;
+            document.getElementById('pin-target-id').value = targetId;
+            document.getElementById('btn-delete-pin').classList.add('hidden');
+            
+            // Selecionar primeira cor por padrão
+            selectPinColor(PIN_COLORS[0]);
+        }
+        
+        modal.classList.remove('hidden');
+        lucide.createIcons();
+    };
+
+    // Selecionar cor do pin
+    function selectPinColor(color) {
+        document.querySelectorAll('.color-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+        
+        event.target.classList.add('selected');
+        
+        // Salvar cor selecionada em um atributo
+        document.getElementById('pin-colors').setAttribute('data-selected-color', color);
+    }
+
+    // Editar pin existente
+    window.editPin = (pinId) => {
+        closeModals(); // Fechar modal atual
+        const pin = allPins.find(p => p.id === pinId);
+        if (pin) {
+            openPinModal(pin.targetType, pin.targetId, pinId);
+        }
+    };
+
+    // Salvar pin
+    window.savePin = async () => {
+        const id = document.getElementById('pin-id').value;
+        const title = document.getElementById('pin-title').value;
+        const comment = document.getElementById('pin-comment').value;
+        const targetType = document.getElementById('pin-target-type').value;
+        const targetId = document.getElementById('pin-target-id').value;
+        const color = document.getElementById('pin-colors').getAttribute('data-selected-color') || PIN_COLORS[0];
+        
+        if (!title) return showToast('Digite um título para a etiqueta', 'error');
+        
+        const data = {
+            title,
+            comment,
+            color,
+            targetType,
+            targetId,
+            updatedAt: serverTimestamp()
+        };
+        
+        try {
+            if (id) {
+                // Editar pin existente
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'pins', id), data);
+                showToast('Etiqueta atualizada', 'success');
+            } else {
+                // Novo pin
+                data.createdAt = serverTimestamp();
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'pins'), data);
+                showToast('Etiqueta criada', 'success');
+            }
+            closeModals();
+        } catch(e) {
+            console.error(e);
+            showToast('Erro ao salvar etiqueta', 'error');
+        }
+    };
+
+    // Confirmar exclusão de pin
+    window.confirmDeletePin = () => {
+        const pinId = document.getElementById('pin-id').value;
+        const pinTitle = document.getElementById('pin-title').value;
+        
+        deletePending = { type: 'pin', id: pinId };
+        document.getElementById('delete-confirm-title').textContent = 'Excluir Etiqueta';
+        document.getElementById('delete-confirm-message').textContent = `Tem certeza que deseja excluir a etiqueta "${pinTitle}"?`;
+        
+        document.getElementById('modal-delete-confirm').classList.remove('hidden');
+    };
+
+    // ============================================
+    // AUTH LOGIC
+    // ============================================
+
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        if (user) {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            subscribeData();
+            lucide.createIcons(); // Recriar ícones após mudança de tela
+        } else {
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            if (unsubTasks) unsubTasks();
+            if (unsubCompanies) unsubCompanies();
+            if (unsubPins) unsubPins();
+            lucide.createIcons(); // Recriar ícones após mudança de tela
+        }
+    });
+
+    document.getElementById('auth-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const btn = document.getElementById('auth-btn');
+        
+        btn.innerHTML = '<i data-lucide="loader-2" width="18"></i> Processando...';
+        btn.disabled = true;
+
+        try {
+            if (isLoginMode) {
+                await signInWithEmailAndPassword(auth, email, password);
+            } else {
+                await createUserWithEmailAndPassword(auth, email, password);
+                showToast('Conta criada com sucesso!', 'success');
+            }
+        } catch (err) {
+            console.error(err);
+            let msg = "Erro na autenticação";
+            if(err.code === 'auth/wrong-password') msg = "Senha incorreta";
+            if(err.code === 'auth/user-not-found') msg = "Usuário não encontrado";
+            if(err.code === 'auth/weak-password') msg = "Senha muito fraca (min 6 digitos)";
+            if(err.code === 'auth/email-already-in-use') msg = "E-mail já cadastrado";
+            showToast(msg, 'error');
+        } finally {
+            updateAuthButton();
+            btn.disabled = false;
+            lucide.createIcons();
+        }
+    });
+
+    // Função para atualizar o botão de autenticação
+    function updateAuthButton() {
+        const authBtn = document.getElementById('auth-btn');
+        const authBtnText = document.getElementById('auth-btn-text');
+        
+        if (isLoginMode) {
+            authBtnText.textContent = 'Entrar no Sistema';
+            authBtn.innerHTML = '<i data-lucide="log-in" width="18"></i> Entrar no Sistema';
+        } else {
+            authBtnText.textContent = 'Criar Conta';
+            authBtn.innerHTML = '<i data-lucide="user-plus" width="18"></i> Criar Conta';
+        }
+    }
+
+    // Função para atualizar o toggle de modo
+    function updateAuthToggle() {
+        const toggleText = document.getElementById('toggle-auth-text');
+        const toggleBtn = document.getElementById('toggle-auth-mode');
+        
+        if (isLoginMode) {
+            toggleText.textContent = 'Criar uma nova conta';
+            toggleBtn.innerHTML = '<i data-lucide="user-plus" width="14"></i> Criar uma nova conta';
+        } else {
+            toggleText.textContent = 'Já tenho uma conta';
+            toggleBtn.innerHTML = '<i data-lucide="log-in" width="14"></i> Já tenho uma conta';
+        }
+    }
+
+    document.getElementById('toggle-auth-mode').addEventListener('click', (e) => {
+        e.preventDefault();
+        isLoginMode = !isLoginMode;
+        updateAuthButton();
+        updateAuthToggle();
+        lucide.createIcons();
+    });
+
+    // Toggle password visibility
+    document.getElementById('toggle-password')?.addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.setAttribute('data-lucide', 'eye-off');
+            this.innerHTML = '<i data-lucide="eye-off" width="14"></i> Ocultar senha';
+        } else {
+            passwordInput.type = 'password';
+            icon.setAttribute('data-lucide', 'eye');
+            this.innerHTML = '<i data-lucide="eye" width="14"></i> Mostrar senha';
+        }
+        lucide.createIcons();
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        if (confirm('Deseja realmente sair do sistema?')) {
+            signOut(auth);
+        }
+    });
+
+    // NAVIGATION
+    window.switchTab = (tab) => {
+        currentTab = tab;
+        document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+        document.querySelector(`.nav-tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+        
+        if (tab === 'tasks') {
+            document.getElementById('view-tasks').classList.remove('hidden');
+            document.getElementById('view-companies').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.add('hidden');
+            renderTasks(); // Re-render tasks when switching to tasks tab
+            
+            // Se há uma tarefa para destacar, destacar ela
+            if (taskToHighlight) {
+                setTimeout(() => {
+                    highlightTask(taskToHighlight);
+                    taskToHighlight = null; // Resetar após destacar
+                }, 100);
+            }
+        } else if (tab === 'companies') {
+            document.getElementById('view-tasks').classList.add('hidden');
+            document.getElementById('view-companies').classList.remove('hidden');
+            document.getElementById('view-dashboard').classList.add('hidden');
+        } else if (tab === 'dashboard') {
+            document.getElementById('view-tasks').classList.add('hidden');
+            document.getElementById('view-companies').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.remove('hidden');
+            updateDashboardCounters();
+        }
+        lucide.createIcons();
+    };
+
+    window.handleFabClick = () => {
+        if (currentTab === 'tasks') openTaskModal();
+        else if (currentTab === 'companies') openCompanyModal();
+        else openCompanyModal(); // Dashboard também abre empresa
+    };
+
+    // Função para mostrar/ocultar campos baseados no regime
+    window.updateRegimeFields = () => {
+        const regime = document.getElementById('company-regime').value;
+        const presumidoFields = document.getElementById('presumido-fields');
+        
+        if (regime === 'PRESUMIDO') {
+            presumidoFields.style.display = 'block';
+        } else {
+            presumidoFields.style.display = 'none';
+        }
+    };
+
+    // Função para sugerir prazos baseados na obrigação
+    window.updateTaskFields = () => {
+        console.log("updateTaskFields() chamada!"); // DEBUG
+        
+        const obligation = document.getElementById('task-obligation').value;
+        const deadlineInput = document.getElementById('task-deadline');
+        const referenceInput = document.getElementById('task-reference');
+        
+        console.log("Obrigação selecionada:", obligation); // DEBUG
+        
+        // Datas de vencimento padrão
+        const vencimentosPadrao = {
+            'DAS': 20, // Dia 20 do mês seguinte
+            'GPS': 20, // Dia 20 do mês seguinte
+            'IRPJ': 30, // Último dia do mês seguinte
+            'CSLL': 30,
+            'PIS_COFINS': 20,
+            'EFD': 15,
+            'DIRF': 30 // Abril
+        };
+        
+        if (vencimentosPadrao[obligation]) {
+            const hoje = new Date();
+            let mes = hoje.getMonth() + 1; // Mês atual (0-indexed)
+            let ano = hoje.getFullYear();
+            
+            console.log("Hoje:", hoje, "Mês:", mes, "Ano:", ano); // DEBUG
+            
+            // Para DAS/GPS: vence no dia X do mês seguinte
+            if (obligation === 'DAS' || obligation === 'GPS') {
+                mes += 1;
+                if (mes > 12) {
+                    mes = 1;
+                    ano += 1;
+                }
+            }
+            
+            // Formatar como YYYY-MM-DD
+            const dia = vencimentosPadrao[obligation];
+            const dataFormatada = `${ano}-${mes.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+            
+            console.log("Data calculada:", dataFormatada); // DEBUG
+            
+            deadlineInput.value = dataFormatada;
+            
+            // Preencher referência também
+            referenceInput.value = `${ano}-${mes.toString().padStart(2, '0')}`;
+            
+            console.log("Campo deadline preenchido com:", deadlineInput.value); // DEBUG
+        } else {
+            console.log("Nenhuma obrigação reconhecida ou vazia"); // DEBUG
+        }
+        
+        // Gerar título automático
+        generateTaskTitle();
+    };
+
+    // Função para gerar título automático de tarefa
+    function generateTaskTitle() {
+        const companySelect = document.getElementById('task-company');
+        const companyId = companySelect.value;
+        const obligation = document.getElementById('task-obligation').value;
+        const reference = document.getElementById('task-reference').value;
+        
+        if (companyId && obligation && reference) {
+            const company = allCompanies.find(c => c.id === companyId);
+            const obligationNames = {
+                'DAS': 'DAS - Simples Nacional',
+                'GPS': 'GPS - Guia da Previdência',
+                'IRPJ': 'IRPJ - Imposto de Renda',
+                'CSLL': 'CSLL - Contribuição Social',
+                'PIS_COFINS': 'PIS/COFINS',
+                'EFD': 'EFD Contribuições',
+                'DIRF': 'DIRF - Declaração IRRF',
+                'DCTF': 'DCTF',
+                'RAIS': 'RAIS',
+                'CAGED': 'CAGED',
+                'SEFIP': 'SEFIP',
+                'DARF': 'DARF'
+            };
+            
+            const title = `${obligationNames[obligation] || obligation} - ${reference}`;
+            document.getElementById('task-title').value = title;
+        }
+    }
+
+    // Adicionar eventos para gerar título automático
+    document.addEventListener('DOMContentLoaded', function() {
+        // Atualizar título quando selecionar obrigação
+        const obligationSelect = document.getElementById('task-obligation');
+        const referenceInput = document.getElementById('task-reference');
+        
+        if (obligationSelect) {
+            obligationSelect.addEventListener('change', generateTaskTitle);
+        }
+        if (referenceInput) {
+            referenceInput.addEventListener('change', generateTaskTitle);
+        }
+    });
+
+    // DATA SYNC
+    function subscribeData() {
+        if (!currentUser) return;
+        
+        // Sync Companies
+        const compRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'companies');
+        unsubCompanies = onSnapshot(compRef, (snap) => {
+            allCompanies = [];
+            snap.forEach(doc => allCompanies.push({ id: doc.id, ...doc.data() }));
+            allCompanies.sort((a,b) => a.name.localeCompare(b.name));
+            renderCompanies();
+            updateCompanyFilterSelect();
+            renderTasks(); // Re-render tasks to update company names
+            updateMetrics(); // Atualizar métricas
+            updateDashboardCounters(); // Atualizar dashboard
+            
+            // Se há um filtro de empresa ativo, atualizar a lista de tarefas
+            if (selectedCompanyId) {
+                renderCompanyTasks();
             }
         });
 
-        // DATA SYNC
-        function subscribeData() {
-            if (!currentUser) return;
+        // Sync Tasks
+        const taskRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks');
+        unsubTasks = onSnapshot(taskRef, (snap) => {
+            allTasks = [];
+            snap.forEach(doc => allTasks.push({ id: doc.id, ...doc.data() }));
             
-            // Sync Companies
-            const compRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'companies');
-            unsubCompanies = onSnapshot(compRef, (snap) => {
-                allCompanies = [];
-                snap.forEach(doc => allCompanies.push({ id: doc.id, ...doc.data() }));
-                allCompanies.sort((a,b) => a.name.localeCompare(b.name));
-                renderCompanies();
-                updateCompanyFilterSelect();
-                renderTasks(); // Re-render tasks to update company names
-                updateMetrics(); // Atualizar métricas
-                updateDashboardCounters(); // Atualizar dashboard
+            // ORDENAÇÃO: Prazos mais próximos primeiro
+            allTasks.sort((a, b) => {
+                // Se um tem prazo e outro não
+                if (a.deadline && !b.deadline) return -1;
+                if (!a.deadline && b.deadline) return 1;
                 
-                // Se há um filtro de empresa ativo, atualizar a lista de tarefas
-                if (selectedCompanyId) {
-                    renderCompanyTasks();
+                // Se ambos tem prazo, o menor (mais próximo) vem primeiro
+                if (a.deadline && b.deadline) {
+                    return a.deadline.localeCompare(b.deadline);
                 }
+                
+                // Desempate por data de criação
+                return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
             });
 
-            // Sync Tasks
-            const taskRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks');
-            unsubTasks = onSnapshot(taskRef, (snap) => {
-                allTasks = [];
-                snap.forEach(doc => allTasks.push({ id: doc.id, ...doc.data() }));
-                
-                // ORDENAÇÃO: Prazos mais próximos primeiro
-                allTasks.sort((a, b) => {
-                    // Se um tem prazo e outro não
-                    if (a.deadline && !b.deadline) return -1;
-                    if (!a.deadline && b.deadline) return 1;
-                    
-                    // Se ambos tem prazo, o menor (mais próximo) vem primeiro
-                    if (a.deadline && b.deadline) {
-                        return a.deadline.localeCompare(b.deadline);
-                    }
-                    
-                    // Desempate por data de criação
-                    return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
-                });
-
-                renderTasks();
-                updateMetrics();
-                updateDashboardCounters(); // Atualizar dashboard
-                
-                // Se há um filtro de empresa ativo, atualizar a lista de tarefas
-                if (selectedCompanyId) {
-                    renderCompanyTasks();
-                }
-            });
-        }
-
-        // Atualizar métricas do dashboard
-        function updateMetrics() {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+            renderTasks();
+            updateMetrics();
+            updateDashboardCounters(); // Atualizar dashboard
             
-            let todayTasks = 0;
-            let urgentTasks = 0;
-            let completedToday = 0;
-            let allPendingTasks = 0;
+            // Se há um filtro de empresa ativo, atualizar a lista de tarefas
+            if (selectedCompanyId) {
+                renderCompanyTasks();
+            }
+        });
+
+        // INICIALIZAR SISTEMA DE PINS
+        initPinsSystem();
+        
+        // INICIALIZAR DETECÇÃO DE PRESSÃO LONGA
+        setTimeout(() => {
+            initLongPress();
+        }, 1000); // Aguardar 1 segundo para garantir que os cards foram renderizados
+    }
+
+    // Atualizar métricas do dashboard
+    function updateMetrics() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        let todayTasks = 0;
+        let urgentTasks = 0;
+        let completedToday = 0;
+        let allPendingTasks = 0;
+        
+        allTasks.forEach(task => {
+            if (!task.completed) allPendingTasks++;
             
-            allTasks.forEach(task => {
-                if (!task.completed) allPendingTasks++;
+            if (task.deadline) {
+                const [y, m, d] = task.deadline.split('-').map(Number);
+                const deadlineDate = new Date(y, m - 1, d);
                 
-                if (task.deadline) {
-                    const [y, m, d] = task.deadline.split('-').map(Number);
-                    const deadlineDate = new Date(y, m - 1, d);
-                    
-                    // Tarefas para hoje
-                    if (deadlineDate.getTime() === today.getTime() && !task.completed) {
-                        todayTasks++;
-                    }
-                    
-                    // Tarefas urgentes (para hoje ou amanhã)
-                    if (!task.completed && deadlineDate <= tomorrow) {
-                        urgentTasks++;
-                    }
+                // Tarefas para hoje
+                if (deadlineDate.getTime() === today.getTime() && !task.completed) {
+                    todayTasks++;
                 }
                 
-                // Tarefas concluídas hoje
-                if (task.completed && task.updatedAt) {
-                    const updatedDate = new Date(task.updatedAt.seconds * 1000);
-                    if (updatedDate.getDate() === today.getDate() && 
-                        updatedDate.getMonth() === today.getMonth() && 
-                        updatedDate.getFullYear() === today.getFullYear()) {
-                        completedToday++;
-                    }
+                // Tarefas urgentes (para hoje ou amanhã)
+                if (!task.completed && deadlineDate <= tomorrow) {
+                    urgentTasks++;
                 }
-            });
-            
-            document.getElementById('today-tasks').textContent = todayTasks;
-            document.getElementById('urgent-tasks').textContent = urgentTasks;
-            document.getElementById('completed-today').textContent = completedToday;
-            document.getElementById('all-tasks').textContent = allPendingTasks;
-        }
-
-        // Atualizar contadores do dashboard
-        function updateDashboardCounters() {
-            // Contar por regime tributário
-            const countSimples = allCompanies.filter(c => c.regime === 'SIMPLES').length;
-            const countPresumido = allCompanies.filter(c => c.regime === 'PRESUMIDO').length;
-            const countReal = allCompanies.filter(c => c.regime === 'REAL').length;
-            const countMEI = allCompanies.filter(c => c.type === 'MEI').length;
-            
-            document.getElementById('count-simples').textContent = countSimples;
-            document.getElementById('count-presumido').textContent = countPresumido;
-            document.getElementById('count-real').textContent = countReal;
-            document.getElementById('count-mei').textContent = countMEI;
-            
-            // Renderizar próximos vencimentos
-            renderUpcomingDeadlines();
-            
-            // Renderizar alertas críticos
-            renderCriticalAlerts();
-        }
-
-        // Renderizar próximos vencimentos
-        function renderUpcomingDeadlines() {
-            const container = document.getElementById('upcoming-deadlines');
-            if (!container) return;
-            
-            const hoje = new Date();
-            const umaSemana = new Date(hoje);
-            umaSemana.setDate(umaSemana.getDate() + 7);
-            
-            const tarefasProximas = allTasks
-                .filter(task => !task.completed && task.deadline)
-                .filter(task => {
-                    const [y, m, d] = task.deadline.split('-').map(Number);
-                    const dataVencimento = new Date(y, m - 1, d);
-                    return dataVencimento >= hoje && dataVencimento <= umaSemana;
-                })
-                .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-                .slice(0, 10); // Limitar a 10
-            
-            container.innerHTML = '';
-            
-            if (tarefasProximas.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 30px; color: var(--text-sec);">
-                        <i data-lucide="check-circle" width="32" style="opacity: 0.5; margin-bottom: 10px;"></i>
-                        <p>Nenhum vencimento para a próxima semana.</p>
-                    </div>
-                `;
-                return;
             }
             
-            tarefasProximas.forEach(task => {
-                const company = allCompanies.find(c => c.id === task.companyId);
+            // Tarefas concluídas hoje
+            if (task.completed && task.updatedAt) {
+                const updatedDate = new Date(task.updatedAt.seconds * 1000);
+                if (updatedDate.getDate() === today.getDate() && 
+                    updatedDate.getMonth() === today.getMonth() && 
+                    updatedDate.getFullYear() === today.getFullYear()) {
+                    completedToday++;
+                }
+            }
+        });
+        
+        document.getElementById('today-tasks').textContent = todayTasks;
+        document.getElementById('urgent-tasks').textContent = urgentTasks;
+        document.getElementById('completed-today').textContent = completedToday;
+        document.getElementById('all-tasks').textContent = allPendingTasks;
+    }
+
+    // Atualizar contadores do dashboard
+    function updateDashboardCounters() {
+        // Contar por regime tributário
+        const countSimples = allCompanies.filter(c => c.regime === 'SIMPLES').length;
+        const countPresumido = allCompanies.filter(c => c.regime === 'PRESUMIDO').length;
+        const countReal = allCompanies.filter(c => c.regime === 'REAL').length;
+        const countMEI = allCompanies.filter(c => c.type === 'MEI').length;
+        
+        document.getElementById('count-simples').textContent = countSimples;
+        document.getElementById('count-presumido').textContent = countPresumido;
+        document.getElementById('count-real').textContent = countReal;
+        document.getElementById('count-mei').textContent = countMEI;
+        
+        // Renderizar próximos vencimentos
+        renderUpcomingDeadlines();
+        
+        // Renderizar alertas críticos
+        renderCriticalAlerts();
+    }
+
+    // Renderizar próximos vencimentos
+    function renderUpcomingDeadlines() {
+        const container = document.getElementById('upcoming-deadlines');
+        if (!container) return;
+        
+        const hoje = new Date();
+        const umaSemana = new Date(hoje);
+        umaSemana.setDate(umaSemana.getDate() + 7);
+        
+        const tarefasProximas = allTasks
+            .filter(task => !task.completed && task.deadline)
+            .filter(task => {
                 const [y, m, d] = task.deadline.split('-').map(Number);
                 const dataVencimento = new Date(y, m - 1, d);
-                const diasRestantes = Math.ceil((dataVencimento - hoje) / (1000 * 60 * 60 * 24));
-                
-                const div = document.createElement('div');
-                div.className = 'card';
-                div.innerHTML = `
-                    <div class="card-content">
-                        <div class="card-header-row">
-                            <div class="card-company">
-                                <i data-lucide="building-2" width="12"></i> ${escapeHtml(company?.name || 'Empresa')}
-                                <span style="margin-left: 10px; font-size: 0.7rem; background: ${diasRestantes <= 2 ? '#ef4444' : '#f59e0b'}; color: white; padding: 2px 6px; border-radius: 10px;">
-                                    ${diasRestantes} ${diasRestantes === 1 ? 'dia' : 'dias'}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="card-title">${escapeHtml(task.title)}</div>
-                        <div class="card-desc">
-                            <span style="color: ${task.category === 'FISCAL' ? '#ef4444' : task.category === 'TRABALHISTA' ? '#3b82f6' : '#10b981'}">
-                                ${task.category} • ${task.obligation || 'Sem obrigação específica'}
+                return dataVencimento >= hoje && dataVencimento <= umaSemana;
+            })
+            .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+            .slice(0, 10); // Limitar a 10
+        
+        container.innerHTML = '';
+        
+        if (tarefasProximas.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 30px; color: var(--text-sec);">
+                    <i data-lucide="check-circle" width="32" style="opacity: 0.5; margin-bottom: 10px;"></i>
+                    <p>Nenhum vencimento para a próxima semana.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        tarefasProximas.forEach(task => {
+            const company = allCompanies.find(c => c.id === task.companyId);
+            const [y, m, d] = task.deadline.split('-').map(Number);
+            const dataVencimento = new Date(y, m - 1, d);
+            const diasRestantes = Math.ceil((dataVencimento - hoje) / (1000 * 60 * 60 * 24));
+            
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `
+                <div class="card-content">
+                    <div class="card-header-row">
+                        <div class="card-company">
+                            <i data-lucide="building-2" width="12"></i> ${escapeHtml(company?.name || 'Empresa')}
+                            <span style="margin-left: 10px; font-size: 0.7rem; background: ${diasRestantes <= 2 ? '#ef4444' : '#f59e0b'}; color: white; padding: 2px 6px; border-radius: 10px;">
+                                ${diasRestantes} ${diasRestantes === 1 ? 'dia' : 'dias'}
                             </span>
                         </div>
                     </div>
-                    <div class="card-actions">
-                        <button class="check-btn" onclick="event.stopPropagation(); openTaskModal(${JSON.stringify(task).replace(/'/g, "&#39;")})">
-                            <i data-lucide="edit" width="18"></i>
-                        </button>
+                    <div class="card-title">${escapeHtml(task.title)}</div>
+                    <div class="card-desc">
+                        <span style="color: ${task.category === 'FISCAL' ? '#ef4444' : task.category === 'TRABALHISTA' ? '#3b82f6' : '#10b981'}">
+                            ${task.category} • ${task.obligation || 'Sem obrigação específica'}
+                        </span>
                     </div>
-                `;
-                container.appendChild(div);
-            });
-            lucide.createIcons();
-        }
+                </div>
+                <div class="card-actions">
+                    <button class="check-btn" onclick="event.stopPropagation(); openTaskModal(${JSON.stringify(task).replace(/'/g, "&#39;")})">
+                        <i data-lucide="edit" width="18"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+        lucide.createIcons();
+    }
 
-        // Renderizar alertas críticos
-        function renderCriticalAlerts() {
-            const container = document.getElementById('critical-alerts');
-            if (!container) return;
-            
-            const hoje = new Date();
-            const alertas = [];
-            
-            // Alertas para empresas sem dados essenciais
-            allCompanies.forEach(company => {
-                if (!company.cnpj && company.type !== 'MEI') {
-                    alertas.push({
-                        tipo: 'EMPRESA',
-                        nivel: 'ALTO',
-                        titulo: `Empresa sem CNPJ: ${company.name}`,
-                        descricao: 'CNPJ é obrigatório para empresas não-MEI',
-                        empresaId: company.id
-                    });
-                }
-                
-                if (company.hasEmployees === 'true' && !company.regime) {
-                    alertas.push({
-                        tipo: 'TRABALHISTA',
-                        nivel: 'ALTO',
-                        titulo: `Empresa com funcionários sem regime definido: ${company.name}`,
-                        descricao: 'Necessário definir regime para cálculo de encargos',
-                        empresaId: company.id
-                    });
-                }
-            });
-            
-            // Alertas para tarefas atrasadas
-            allTasks.forEach(task => {
-                if (!task.completed && task.deadline) {
-                    const [y, m, d] = task.deadline.split('-').map(Number);
-                    const dataVencimento = new Date(y, m - 1, d);
-                    
-                    if (dataVencimento < hoje) {
-                        const company = allCompanies.find(c => c.id === task.companyId);
-                        const diasAtraso = Math.ceil((hoje - dataVencimento) / (1000 * 60 * 60 * 24));
-                        
-                        alertas.push({
-                            tipo: 'TAREFA',
-                            nivel: diasAtraso > 5 ? 'CRÍTICO' : 'ALTO',
-                            titulo: `Tarefa atrasada: ${task.title}`,
-                            descricao: `Atrasada há ${diasAtraso} dias - ${company?.name || 'Empresa'}`,
-                            empresaId: task.companyId,
-                            taskId: task.id
-                        });
-                    }
-                }
-            });
-            
-            container.innerHTML = '';
-            
-            if (alertas.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 30px; color: var(--text-sec);">
-                        <i data-lucide="check-circle" width="32" style="opacity: 0.5; margin-bottom: 10px;"></i>
-                        <p>Nenhum alerta crítico no momento.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Ordenar por nível de criticidade
-            const nivelPrioridade = { 'CRÍTICO': 3, 'ALTO': 2, 'MÉDIO': 1, 'BAIXO': 0 };
-            alertas.sort((a, b) => nivelPrioridade[b.nivel] - nivelPrioridade[a.nivel]);
-            
-            alertas.slice(0, 5).forEach(alerta => {
-                const div = document.createElement('div');
-                div.className = 'card urgent';
-                div.onclick = () => {
-                    if (alerta.taskId) {
-                        const task = allTasks.find(t => t.id === alerta.taskId);
-                        if (task) openTaskModal(task);
-                    } else if (alerta.empresaId) {
-                        const company = allCompanies.find(c => c.id === alerta.empresaId);
-                        if (company) openCompanyModal(company);
-                    }
-                };
-                
-                div.innerHTML = `
-                    <div class="card-content">
-                        <div class="card-header-row">
-                            <div class="card-company" style="color: ${alerta.nivel === 'CRÍTICO' ? '#ef4444' : '#f59e0b'}">
-                                <i data-lucide="alert-triangle" width="12"></i> ${alerta.nivel}: ${alerta.tipo}
-                            </div>
-                        </div>
-                        <div class="card-title">${escapeHtml(alerta.titulo)}</div>
-                        <div class="card-desc">${escapeHtml(alerta.descricao)}</div>
-                    </div>
-                    <div class="card-actions">
-                        <button class="check-btn" onclick="event.stopPropagation();">
-                            <i data-lucide="arrow-right" width="18"></i>
-                        </button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-            lucide.createIcons();
-        }
-
-        // Função para filtrar por regime
-        window.filterByRegime = (regime) => {
-            selectedCompanyId = null; // Limpar filtro anterior
-            const empresasFiltradas = allCompanies.filter(c => c.regime === regime);
-            
-            // Atualizar select de filtro
-            const select = document.getElementById('company-filter-select');
-            select.value = ''; // Limpar seleção
-            
-            // Mostrar na tela de empresas
-            switchTab('companies');
-            
-            // Criar lista de empresas filtradas
-            const list = document.getElementById('company-list');
-            list.innerHTML = '';
-            
-            if (empresasFiltradas.length === 0) {
-                list.innerHTML = `
-                    <div style="text-align: center; padding: 50px; border: 2px dashed var(--border); border-radius: 8px; color: var(--text-sec);">
-                        <i data-lucide="building" width="48" style="margin-bottom: 10px; opacity: 0.5;"></i>
-                        <p>Nenhuma empresa encontrada no regime ${regime}.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            empresasFiltradas.forEach(comp => {
-                const div = document.createElement('div');
-                div.className = 'company-card';
-                
-                // Determinar badge pelo regime
-                let badgeClass = '';
-                if (comp.type === 'MEI') badgeClass = 'badge-mei';
-                else if (comp.regime === 'SIMPLES') badgeClass = 'badge-simples';
-                else if (comp.regime === 'PRESUMIDO') badgeClass = 'badge-presumido';
-                else if (comp.regime === 'REAL') badgeClass = 'badge-real';
-                else if (comp.type === 'LTDA') badgeClass = 'badge-ltda';
-                
-                div.innerHTML = `
-                    <h4>${escapeHtml(comp.name)} <span class="company-badge ${badgeClass}">${comp.regime || comp.type}</span></h4>
-                    <p><strong>Regime:</strong> ${comp.regime || 'Não informado'}</p>
-                    ${comp.cnpj ? `<p><i data-lucide="file-text" width="12"></i> ${escapeHtml(comp.cnpj)}</p>` : ''}
-                    ${comp.type ? `<p><i data-lucide="building" width="12"></i> ${comp.type}</p>` : ''}
-                    ${comp.cnae ? `<p><i data-lucide="hash" width="12"></i> CNAE: ${comp.cnae}</p>` : ''}
-                    <div class="company-actions">
-                        <button class="icon-btn" onclick='openCompanyModal(${JSON.stringify(comp).replace(/'/g, "&#39;")})'>
-                            <i data-lucide="pencil" width="16"></i>
-                        </button>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-            
-            showToast(`${empresasFiltradas.length} empresas no regime ${regime}`, 'success');
-            lucide.createIcons();
-        };
-
-        // Função para filtrar por tipo
-        window.filterByType = (type) => {
-            selectedCompanyId = null; // Limpar filtro anterior
-            const empresasFiltradas = allCompanies.filter(c => c.type === type);
-            
-            // Atualizar select de filtro
-            const select = document.getElementById('company-filter-select');
-            select.value = ''; // Limpar seleção
-            
-            // Mostrar na tela de empresas
-            switchTab('companies');
-            
-            // Criar lista de empresas filtradas
-            const list = document.getElementById('company-list');
-            list.innerHTML = '';
-            
-            if (empresasFiltradas.length === 0) {
-                list.innerHTML = `
-                    <div style="text-align: center; padding: 50px; border: 2px dashed var(--border); border-radius: 8px; color: var(--text-sec);">
-                        <i data-lucide="building" width="48" style="margin-bottom: 10px; opacity: 0.5;"></i>
-                        <p>Nenhuma empresa encontrada do tipo ${type}.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            empresasFiltradas.forEach(comp => {
-                const div = document.createElement('div');
-                div.className = 'company-card';
-                
-                // Determinar badge pelo regime
-                let badgeClass = '';
-                if (comp.type === 'MEI') badgeClass = 'badge-mei';
-                else if (comp.regime === 'SIMPLES') badgeClass = 'badge-simples';
-                else if (comp.regime === 'PRESUMIDO') badgeClass = 'badge-presumido';
-                else if (comp.regime === 'REAL') badgeClass = 'badge-real';
-                else if (comp.type === 'LTDA') badgeClass = 'badge-ltda';
-                
-                div.innerHTML = `
-                    <h4>${escapeHtml(comp.name)} <span class="company-badge ${badgeClass}">${comp.type}</span></h4>
-                    <p><strong>Tipo:</strong> ${comp.type}</p>
-                    <p><strong>Regime:</strong> ${comp.regime || 'Não informado'}</p>
-                    ${comp.cnpj ? `<p><i data-lucide="file-text" width="12"></i> ${escapeHtml(comp.cnpj)}</p>` : ''}
-                    ${comp.cnae ? `<p><i data-lucide="hash" width="12"></i> CNAE: ${comp.cnae}</p>` : ''}
-                    <div class="company-actions">
-                        <button class="icon-btn" onclick='openCompanyModal(${JSON.stringify(comp).replace(/'/g, "&#39;")})'>
-                            <i data-lucide="pencil" width="16"></i>
-                        </button>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-            
-            showToast(`${empresasFiltradas.length} empresas do tipo ${type}`, 'success');
-            lucide.createIcons();
-        };
-
-        // Atualizar o select de filtro de empresa
-        function updateCompanyFilterSelect() {
-            const select = document.getElementById('company-filter-select');
-            const currentValue = select.value;
-            
-            select.innerHTML = '<option value="">Todas as empresas</option>';
-            
-            allCompanies.forEach(company => {
-                const option = document.createElement('option');
-                option.value = company.id;
-                option.textContent = company.name;
-                select.appendChild(option);
-            });
-            
-            // Restaurar o valor selecionado
-            if (currentValue && allCompanies.some(c => c.id === currentValue)) {
-                select.value = currentValue;
-            }
-            
-            lucide.createIcons();
-        }
-
-        // Função para filtrar tarefas por empresa
-        window.filterCompanyTasks = () => {
-            const select = document.getElementById('company-filter-select');
-            selectedCompanyId = select.value;
-            const clearBtn = document.getElementById('company-filter-clear');
-            
-            if (selectedCompanyId) {
-                clearBtn.classList.remove('hidden');
-                renderCompanyTasks();
-            } else {
-                clearBtn.classList.add('hidden');
-                clearCompanyFilter();
-            }
-        };
-
-        // Função para limpar filtro de empresa
-        window.clearCompanyFilter = () => {
-            const select = document.getElementById('company-filter-select');
-            select.value = '';
-            selectedCompanyId = null;
-            document.getElementById('company-filter-clear').classList.add('hidden');
-            
-            // Esconder a seção de tarefas da empresa
-            document.getElementById('company-tasks-section').classList.add('hidden');
-            
-            // Re-renderizar lista completa de empresas
-            renderCompanies();
-        };
-
-        // Renderizar tarefas da empresa selecionada
-        function renderCompanyTasks() {
-            if (!selectedCompanyId) return;
-            
-            const company = allCompanies.find(c => c.id === selectedCompanyId);
-            if (!company) return;
-            
-            const section = document.getElementById('company-tasks-section');
-            const tasksList = document.getElementById('company-tasks-list');
-            const title = document.getElementById('company-tasks-title');
-            const count = document.getElementById('company-tasks-count');
-            
-            // Atualizar título
-            title.textContent = `Tarefas - ${company.name}`;
-            
-            // Filtrar tarefas da empresa
-            const companyTasks = allTasks.filter(task => task.companyId === selectedCompanyId);
-            
-            // Atualizar contador
-            const pendingCount = companyTasks.filter(t => !t.completed).length;
-            const completedCount = companyTasks.filter(t => t.completed).length;
-            count.textContent = `${companyTasks.length} (${pendingCount} pendentes, ${completedCount} concluídas)`;
-            
-            // Renderizar lista de tarefas
-            tasksList.innerHTML = '';
-            
-            if (companyTasks.length === 0) {
-                tasksList.innerHTML = `
-                    <div style="text-align: center; padding: 30px; color: var(--text-sec);">
-                        <i data-lucide="clipboard-list" width="32" style="opacity: 0.5; margin-bottom: 10px;"></i>
-                        <p>Nenhuma tarefa encontrada para esta empresa.</p>
-                    </div>
-                `;
-            } else {
-                companyTasks.forEach(task => {
-                    const taskItem = document.createElement('div');
-                    taskItem.className = `company-task-item ${task.completed ? 'completed' : ''}`;
-                    
-                    let deadlineHtml = '';
-                    if (task.deadline) {
-                        const [y, m, d] = task.deadline.split('-').map(Number);
-                        const deadlineDate = new Date(y, m - 1, d);
-                        const formattedDate = deadlineDate.toLocaleDateString('pt-BR');
-                        deadlineHtml = `
-                            <div class="company-task-deadline">
-                                <i data-lucide="calendar" width="12"></i>
-                                <span>${formattedDate}</span>
-                            </div>
-                        `;
-                    }
-                    
-                    // Determinar cor da categoria
-                    let categoryColor = '';
-                    if (task.category === 'FISCAL') categoryColor = '#ef4444';
-                    else if (task.category === 'TRABALHISTA') categoryColor = '#3b82f6';
-                    else if (task.category === 'CONTABIL') categoryColor = '#10b981';
-                    else if (task.category === 'MUNICIPAL') categoryColor = '#8b5cf6';
-                    else categoryColor = '#6b7280';
-                    
-                    taskItem.innerHTML = `
-                        <div class="company-task-content">
-                            <div class="company-task-title">${escapeHtml(task.title)}</div>
-                            <div class="company-task-info">
-                                <div class="company-task-status ${task.completed ? 'completed' : 'pending'}">
-                                    <i data-lucide="${task.completed ? 'check-circle' : 'clock'}" width="12"></i>
-                                    <span>${task.completed ? 'Concluída' : 'Pendente'}</span>
-                                </div>
-                                <div style="color: ${categoryColor}; font-weight: 500;">
-                                    <i data-lucide="tag" width="12"></i> ${task.category}
-                                </div>
-                                ${deadlineHtml}
-                                ${task.description ? `<div><i data-lucide="file-text" width="12"></i> ${escapeHtml(task.description.substring(0, 30))}${task.description.length > 30 ? '...' : ''}</div>` : ''}
-                            </div>
-                        </div>
-                        <div class="company-task-actions">
-                            <button class="company-task-action-btn view" onclick="navigateToTask('${task.id}')">
-                                <i data-lucide="eye" width="14"></i> Ver
-                            </button>
-                            <button class="company-task-action-btn" onclick="openTaskModal(${JSON.stringify(task).replace(/'/g, "&#39;")})">
-                                <i data-lucide="pencil" width="14"></i> Editar
-                            </button>
-                        </div>
-                    `;
-                    
-                    tasksList.appendChild(taskItem);
+    // Renderizar alertas críticos
+    function renderCriticalAlerts() {
+        const container = document.getElementById('critical-alerts');
+        if (!container) return;
+        
+        const hoje = new Date();
+        const alertas = [];
+        
+        // Alertas para empresas sem dados essenciais
+        allCompanies.forEach(company => {
+            if (!company.cnpj && company.type !== 'MEI') {
+                alertas.push({
+                    tipo: 'EMPRESA',
+                    nivel: 'ALTO',
+                    titulo: `Empresa sem CNPJ: ${company.name}`,
+                    descricao: 'CNPJ é obrigatório para empresas não-MEI',
+                    empresaId: company.id
                 });
             }
             
-            // Mostrar a seção
-            section.classList.remove('hidden');
-            lucide.createIcons();
-        }
-
-        // Função para navegar para uma tarefa específica
-        window.navigateToTask = (taskId) => {
-            taskToHighlight = taskId;
-            switchTab('tasks');
-        };
-
-        // Função para destacar uma tarefa na lista
-        function highlightTask(taskId) {
-            // Remover destaque de todas as tarefas
-            document.querySelectorAll('.card').forEach(card => {
-                card.classList.remove('highlighted');
-            });
-            
-            // Encontrar e destacar a tarefa específica
-            const taskElement = document.querySelector(`.card [onclick*="${taskId}"]`)?.closest('.card');
-            if (taskElement) {
-                taskElement.classList.add('highlighted');
-                
-                // Scroll para a tarefa
-                taskElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
+            if (company.hasEmployees === 'true' && !company.regime) {
+                alertas.push({
+                    tipo: 'TRABALHISTA',
+                    nivel: 'ALTO',
+                    titulo: `Empresa com funcionários sem regime definido: ${company.name}`,
+                    descricao: 'Necessário definir regime para cálculo de encargos',
+                    empresaId: company.id
                 });
             }
+        });
+        
+        // Alertas para tarefas atrasadas
+        allTasks.forEach(task => {
+            if (!task.completed && task.deadline) {
+                const [y, m, d] = task.deadline.split('-').map(Number);
+                const dataVencimento = new Date(y, m - 1, d);
+                
+                if (dataVencimento < hoje) {
+                    const company = allCompanies.find(c => c.id === task.companyId);
+                    const diasAtraso = Math.ceil((hoje - dataVencimento) / (1000 * 60 * 60 * 24));
+                    
+                    alertas.push({
+                        tipo: 'TAREFA',
+                        nivel: diasAtraso > 5 ? 'CRÍTICO' : 'ALTO',
+                        titulo: `Tarefa atrasada: ${task.title}`,
+                        descricao: `Atrasada há ${diasAtraso} dias - ${company?.name || 'Empresa'}`,
+                        empresaId: task.companyId,
+                        taskId: task.id
+                    });
+                }
+            }
+        });
+        
+        container.innerHTML = '';
+        
+        if (alertas.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 30px; color: var(--text-sec);">
+                    <i data-lucide="check-circle" width="32" style="opacity: 0.5; margin-bottom: 10px;"></i>
+                    <p>Nenhum alerta crítico no momento.</p>
+                </div>
+            `;
+            return;
         }
-
-        // Função para definir o filtro de tarefas
-        window.setTaskFilter = (filter) => {
-            currentTaskFilter = filter;
-            
-            // Remover classe active de todos os filtros
-            document.querySelectorAll('.metric-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            
-            // Adicionar classe active ao filtro selecionado
-            const filterMap = {
-                'all': 'filter-all',
-                'today': 'filter-today',
-                'urgent': 'filter-urgent',
-                'completed': 'filter-completed'
+        
+        // Ordenar por nível de criticidade
+        const nivelPrioridade = { 'CRÍTICO': 3, 'ALTO': 2, 'MÉDIO': 1, 'BAIXO': 0 };
+        alertas.sort((a, b) => nivelPrioridade[b.nivel] - nivelPrioridade[a.nivel]);
+        
+        alertas.slice(0, 5).forEach(alerta => {
+            const div = document.createElement('div');
+            div.className = 'card urgent';
+            div.onclick = () => {
+                if (alerta.taskId) {
+                    const task = allTasks.find(t => t.id === alerta.taskId);
+                    if (task) openTaskModal(task);
+                } else if (alerta.empresaId) {
+                    const company = allCompanies.find(c => c.id === alerta.empresaId);
+                    if (company) openCompanyModal(company);
+                }
             };
             
-            document.getElementById(filterMap[filter]).classList.add('active');
-            
-            // Atualizar título do filtro
-            const filterTitles = {
-                'all': 'Todas as tarefas',
-                'today': 'Tarefas para hoje',
-                'urgent': 'Tarefas urgentes',
-                'completed': 'Tarefas concluídas hoje'
-            };
-            
-            document.getElementById('filter-title').textContent = filter === 'all' ? 'Pendências' : filterTitles[filter];
-            document.getElementById('current-filter').textContent = filterTitles[filter];
-            
-            // Renderizar tarefas com o filtro aplicado
-            renderTasks();
-        };
+            div.innerHTML = `
+                <div class="card-content">
+                    <div class="card-header-row">
+                        <div class="card-company" style="color: ${alerta.nivel === 'CRÍTICO' ? '#ef4444' : '#f59e0b'}">
+                            <i data-lucide="alert-triangle" width="12"></i> ${alerta.nivel}: ${alerta.tipo}
+                        </div>
+                    </div>
+                    <div class="card-title">${escapeHtml(alerta.titulo)}</div>
+                    <div class="card-desc">${escapeHtml(alerta.descricao)}</div>
+                </div>
+                <div class="card-actions">
+                    <button class="check-btn" onclick="event.stopPropagation();">
+                        <i data-lucide="arrow-right" width="18"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+        lucide.createIcons();
+    }
 
-        // RENDER TASKS
-        function renderTasks() {
-            const pendingList = document.getElementById('pending-list');
-            const completedList = document.getElementById('completed-list');
-            pendingList.innerHTML = '';
-            completedList.innerHTML = '';
+    // Função para filtrar por regime
+    window.filterByRegime = (regime) => {
+        selectedCompanyId = null; // Limpar filtro anterior
+        const empresasFiltradas = allCompanies.filter(c => c.regime === regime);
+        
+        // Atualizar select de filtro
+        const select = document.getElementById('company-filter-select');
+        select.value = ''; // Limpar seleção
+        
+        // Mostrar na tela de empresas
+        switchTab('companies');
+        
+        // Criar lista de empresas filtradas
+        const list = document.getElementById('company-list');
+        list.innerHTML = '';
+        
+        if (empresasFiltradas.length === 0) {
+            list.innerHTML = `
+                <div style="text-align: center; padding: 50px; border: 2px dashed var(--border); border-radius: 8px; color: var(--text-sec);">
+                    <i data-lucide="building" width="48" style="margin-bottom: 10px; opacity: 0.5;"></i>
+                    <p>Nenhuma empresa encontrada no regime ${regime}.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        empresasFiltradas.forEach(comp => {
+            const div = document.createElement('div');
+            div.className = 'company-card';
             
-            let pendingCount = 0;
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+            // Determinar badge pelo regime
+            let badgeClass = '';
+            if (comp.type === 'MEI') badgeClass = 'badge-mei';
+            else if (comp.regime === 'SIMPLES') badgeClass = 'badge-simples';
+            else if (comp.regime === 'PRESUMIDO') badgeClass = 'badge-presumido';
+            else if (comp.regime === 'REAL') badgeClass = 'badge-real';
+            else if (comp.type === 'LTDA') badgeClass = 'badge-ltda';
             
-            // Define data limite para "Urgente" (hoje e amanhã)
-            const urgentThreshold = new Date(today);
-            urgentThreshold.setDate(urgentThreshold.getDate() + 1); // Amanhã
+            div.innerHTML = `
+                <h4>${escapeHtml(comp.name)} <span class="company-badge ${badgeClass}">${comp.regime || comp.type}</span></h4>
+                <p><strong>Regime:</strong> ${comp.regime || 'Não informado'}</p>
+                ${comp.cnpj ? `<p><i data-lucide="file-text" width="12"></i> ${escapeHtml(comp.cnpj)}</p>` : ''}
+                ${comp.type ? `<p><i data-lucide="building" width="12"></i> ${comp.type}</p>` : ''}
+                ${comp.cnae ? `<p><i data-lucide="hash" width="12"></i> CNAE: ${comp.cnae}</p>` : ''}
+                <div class="company-actions">
+                    <button class="icon-btn" onclick='openCompanyModal(${JSON.stringify(comp).replace(/'/g, "&#39;")})'>
+                        <i data-lucide="pencil" width="16"></i>
+                    </button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+        
+        showToast(`${empresasFiltradas.length} empresas no regime ${regime}`, 'success');
+        lucide.createIcons();
+    };
 
-            allTasks.forEach(task => {
-                const company = allCompanies.find(c => c.id === task.companyId);
-                const companyName = company ? company.name : 'Empresa não encontrada';
+    // Função para filtrar por tipo
+    window.filterByType = (type) => {
+        selectedCompanyId = null; // Limpar filtro anterior
+        const empresasFiltradas = allCompanies.filter(c => c.type === type);
+        
+        // Atualizar select de filtro
+        const select = document.getElementById('company-filter-select');
+        select.value = ''; // Limpar seleção
+        
+        // Mostrar na tela de empresas
+        switchTab('companies');
+        
+        // Criar lista de empresas filtradas
+        const list = document.getElementById('company-list');
+        list.innerHTML = '';
+        
+        if (empresasFiltradas.length === 0) {
+            list.innerHTML = `
+                <div style="text-align: center; padding: 50px; border: 2px dashed var(--border); border-radius: 8px; color: var(--text-sec);">
+                    <i data-lucide="building" width="48" style="margin-bottom: 10px; opacity: 0.5;"></i>
+                    <p>Nenhuma empresa encontrada do tipo ${type}.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        empresasFiltradas.forEach(comp => {
+            const div = document.createElement('div');
+            div.className = 'company-card';
+            
+            // Determinar badge pelo regime
+            let badgeClass = '';
+            if (comp.type === 'MEI') badgeClass = 'badge-mei';
+            else if (comp.regime === 'SIMPLES') badgeClass = 'badge-simples';
+            else if (comp.regime === 'PRESUMIDO') badgeClass = 'badge-presumido';
+            else if (comp.regime === 'REAL') badgeClass = 'badge-real';
+            else if (comp.type === 'LTDA') badgeClass = 'badge-ltda';
+            
+            div.innerHTML = `
+                <h4>${escapeHtml(comp.name)} <span class="company-badge ${badgeClass}">${comp.type}</span></h4>
+                <p><strong>Tipo:</strong> ${comp.type}</p>
+                <p><strong>Regime:</strong> ${comp.regime || 'Não informado'}</p>
+                ${comp.cnpj ? `<p><i data-lucide="file-text" width="12"></i> ${escapeHtml(comp.cnpj)}</p>` : ''}
+                ${comp.cnae ? `<p><i data-lucide="hash" width="12"></i> CNAE: ${comp.cnae}</p>` : ''}
+                <div class="company-actions">
+                    <button class="icon-btn" onclick='openCompanyModal(${JSON.stringify(comp).replace(/'/g, "&#39;")})'>
+                        <i data-lucide="pencil" width="16"></i>
+                    </button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+        
+        showToast(`${empresasFiltradas.length} empresas do tipo ${type}`, 'success');
+        lucide.createIcons();
+    };
+
+    // Atualizar o select de filtro de empresa
+    function updateCompanyFilterSelect() {
+        const select = document.getElementById('company-filter-select');
+        const currentValue = select.value;
+        
+        select.innerHTML = '<option value="">Todas as empresas</option>';
+        
+        allCompanies.forEach(company => {
+            const option = document.createElement('option');
+            option.value = company.id;
+            option.textContent = company.name;
+            select.appendChild(option);
+        });
+        
+        // Restaurar o valor selecionado
+        if (currentValue && allCompanies.some(c => c.id === currentValue)) {
+            select.value = currentValue;
+        }
+        
+        lucide.createIcons();
+    }
+
+    // Função para filtrar tarefas por empresa
+    window.filterCompanyTasks = () => {
+        const select = document.getElementById('company-filter-select');
+        selectedCompanyId = select.value;
+        const clearBtn = document.getElementById('company-filter-clear');
+        
+        if (selectedCompanyId) {
+            clearBtn.classList.remove('hidden');
+            renderCompanyTasks();
+        } else {
+            clearBtn.classList.add('hidden');
+            clearCompanyFilter();
+        }
+    };
+
+    // Função para limpar filtro de empresa
+    window.clearCompanyFilter = () => {
+        const select = document.getElementById('company-filter-select');
+        select.value = '';
+        selectedCompanyId = null;
+        document.getElementById('company-filter-clear').classList.add('hidden');
+        
+        // Esconder a seção de tarefas da empresa
+        document.getElementById('company-tasks-section').classList.add('hidden');
+        
+        // Re-renderizar lista completa de empresas
+        renderCompanies();
+    };
+
+    // Renderizar tarefas da empresa selecionada
+    function renderCompanyTasks() {
+        if (!selectedCompanyId) return;
+        
+        const company = allCompanies.find(c => c.id === selectedCompanyId);
+        if (!company) return;
+        
+        const section = document.getElementById('company-tasks-section');
+        const tasksList = document.getElementById('company-tasks-list');
+        const title = document.getElementById('company-tasks-title');
+        const count = document.getElementById('company-tasks-count');
+        
+        // Atualizar título
+        title.textContent = `Tarefas - ${company.name}`;
+        
+        // Filtrar tarefas da empresa
+        const companyTasks = allTasks.filter(task => task.companyId === selectedCompanyId);
+        
+        // Atualizar contador
+        const pendingCount = companyTasks.filter(t => !t.completed).length;
+        const completedCount = companyTasks.filter(t => t.completed).length;
+        count.textContent = `${companyTasks.length} (${pendingCount} pendentes, ${completedCount} concluídas)`;
+        
+        // Renderizar lista de tarefas
+        tasksList.innerHTML = '';
+        
+        if (companyTasks.length === 0) {
+            tasksList.innerHTML = `
+                <div style="text-align: center; padding: 30px; color: var(--text-sec);">
+                    <i data-lucide="clipboard-list" width="32" style="opacity: 0.5; margin-bottom: 10px;"></i>
+                    <p>Nenhuma tarefa encontrada para esta empresa.</p>
+                </div>
+            `;
+        } else {
+            companyTasks.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = `company-task-item ${task.completed ? 'completed' : ''}`;
                 
                 let deadlineHtml = '';
-                let isUrgent = false;
-                let isToday = false;
-                let isCompletedToday = false;
-
-                // Verificar se a tarefa deve ser mostrada com base no filtro atual
-                let showTask = true;
-                
-                if (currentTaskFilter === 'today' && task.deadline) {
-                    const [y, m, d] = task.deadline.split('-').map(Number);
-                    const deadlineDate = new Date(y, m - 1, d);
-                    isToday = deadlineDate.getTime() === today.getTime();
-                    if (!isToday || task.completed) showTask = false;
-                }
-                
-                if (currentTaskFilter === 'urgent' && task.deadline) {
-                    const [y, m, d] = task.deadline.split('-').map(Number);
-                    const deadlineDate = new Date(y, m - 1, d);
-                    isUrgent = !task.completed && deadlineDate <= tomorrow;
-                    if (!isUrgent) showTask = false;
-                }
-                
-                if (currentTaskFilter === 'completed' && task.completed) {
-                    if (task.updatedAt) {
-                        const updatedDate = new Date(task.updatedAt.seconds * 1000);
-                        isCompletedToday = updatedDate.getDate() === today.getDate() && 
-                                         updatedDate.getMonth() === today.getMonth() && 
-                                         updatedDate.getFullYear() === today.getFullYear();
-                        if (!isCompletedToday) showTask = false;
-                    } else {
-                        showTask = false;
-                    }
-                }
-                
-                if (currentTaskFilter === 'completed' && !task.completed) {
-                    showTask = false;
-                }
-                
-                // Se filtro "all", mostrar todas as pendentes no pending list
-                if (currentTaskFilter === 'all' && task.completed) {
-                    showTask = false; // As concluídas vão para completed-list
-                }
-
-                if (!showTask && !task.completed) {
-                    return; // Não mostrar esta tarefa no pending list
-                }
-
                 if (task.deadline) {
-                    // Para evitar confusão de fuso horário ao criar a data a partir da string YYYY-MM-DD
                     const [y, m, d] = task.deadline.split('-').map(Number);
-                    const deadlineDate = new Date(y, m - 1, d); // Mês é 0-indexado
-                    
-                    // Verifica urgência: Se data prazo <= amanhã E não concluída
-                    if (!task.completed && deadlineDate <= urgentThreshold) {
-                        isUrgent = true;
-                    }
-
-                    const dateFormatted = deadlineDate.toLocaleDateString('pt-BR');
-                    const badgeClass = isUrgent ? 'urgent' : 'normal';
-                    const icon = isUrgent ? 'alert-circle' : 'calendar';
-                    deadlineHtml = `<span class="deadline-badge ${badgeClass}"><i data-lucide="${icon}" width="10"></i> ${dateFormatted}</span>`;
+                    const deadlineDate = new Date(y, m - 1, d);
+                    const formattedDate = deadlineDate.toLocaleDateString('pt-BR');
+                    deadlineHtml = `
+                        <div class="company-task-deadline">
+                            <i data-lucide="calendar" width="12"></i>
+                            <span>${formattedDate}</span>
+                        </div>
+                    `;
                 }
-
-                const div = document.createElement('div');
-                // Aplica classe .urgent se for urgente
-                div.className = `card ${task.completed ? 'completed-card' : ''} ${isUrgent ? 'urgent' : ''} ${taskToHighlight === task.id ? 'highlighted' : ''}`;
                 
-                div.onclick = (e) => {
-                    if(!e.target.closest('.check-btn') && !e.target.closest('.delete-btn')) openTaskModal(task);
-                };
-
                 // Determinar cor da categoria
                 let categoryColor = '';
-                let categoryIcon = 'file-text';
-                if (task.category === 'FISCAL') {
-                    categoryColor = '#ef4444';
-                    categoryIcon = 'receipt';
-                } else if (task.category === 'TRABALHISTA') {
-                    categoryColor = '#3b82f6';
-                    categoryIcon = 'users';
-                } else if (task.category === 'CONTABIL') {
-                    categoryColor = '#10b981';
-                    categoryIcon = 'calculator';
-                } else if (task.category === 'MUNICIPAL') {
-                    categoryColor = '#8b5cf6';
-                    categoryIcon = 'building';
-                } else {
-                    categoryColor = '#6b7280';
-                    categoryIcon = 'file-text';
-                }
-
-                div.innerHTML = `
-                    <div class="card-content">
-                        <div class="card-header-row">
-                            <div class="card-company"><i data-lucide="building-2" width="12"></i> ${escapeHtml(companyName)}</div>
+                if (task.category === 'FISCAL') categoryColor = '#ef4444';
+                else if (task.category === 'TRABALHISTA') categoryColor = '#3b82f6';
+                else if (task.category === 'CONTABIL') categoryColor = '#10b981';
+                else if (task.category === 'MUNICIPAL') categoryColor = '#8b5cf6';
+                else categoryColor = '#6b7280';
+                
+                taskItem.innerHTML = `
+                    <div class="company-task-content">
+                        <div class="company-task-title">${escapeHtml(task.title)}</div>
+                        <div class="company-task-info">
+                            <div class="company-task-status ${task.completed ? 'completed' : 'pending'}">
+                                <i data-lucide="${task.completed ? 'check-circle' : 'clock'}" width="12"></i>
+                                <span>${task.completed ? 'Concluída' : 'Pendente'}</span>
+                            </div>
+                            <div style="color: ${categoryColor}; font-weight: 500;">
+                                <i data-lucide="tag" width="12"></i> ${task.category}
+                            </div>
                             ${deadlineHtml}
+                            ${task.description ? `<div><i data-lucide="file-text" width="12"></i> ${escapeHtml(task.description.substring(0, 30))}${task.description.length > 30 ? '...' : ''}</div>` : ''}
                         </div>
-                        <div class="card-title">${escapeHtml(task.title)}</div>
-                        <div class="card-desc">
-                            <span style="color: ${categoryColor}; display: flex; align-items: center; gap: 5px;">
-                                <i data-lucide="${categoryIcon}" width="12"></i>
-                                ${task.category || 'Sem categoria'} • ${task.obligation || 'Sem obrigação'}
-                                ${task.value ? `• R$ ${parseFloat(task.value).toFixed(2)}` : ''}
-                            </span>
-                        </div>
-                        ${task.description ? `<div class="card-desc">${escapeHtml(task.description)}</div>` : ''}
                     </div>
-                    <div class="card-actions">
-                        <button class="delete-btn" onclick="event.stopPropagation(); confirmDeleteTask('${task.id}', '${escapeHtml(task.title)}')">
-                            <i data-lucide="trash-2" width="18"></i>
+                    <div class="company-task-actions">
+                        <button class="company-task-action-btn view" onclick="navigateToTask('${task.id}')">
+                            <i data-lucide="eye" width="14"></i> Ver
                         </button>
-                        <button class="check-btn" onclick="event.stopPropagation(); toggleTask('${task.id}', ${!task.completed})">
-                            <i data-lucide="${task.completed ? 'rotate-ccw' : 'check'}" width="18"></i>
+                        <button class="company-task-action-btn" onclick="openTaskModal(${JSON.stringify(task).replace(/'/g, "&#39;")})">
+                            <i data-lucide="pencil" width="14"></i> Editar
                         </button>
                     </div>
                 `;
-
-                if (task.completed) {
-                    // Para tarefas concluídas, só mostrar se for filtro "completed" ou "all"
-                    if (currentTaskFilter === 'completed' || currentTaskFilter === 'all') {
-                        completedList.appendChild(div);
-                    }
-                } else {
-                    pendingList.appendChild(div);
-                    pendingCount++;
-                }
+                
+                tasksList.appendChild(taskItem);
             });
+        }
+        
+        // Mostrar a seção
+        section.classList.remove('hidden');
+        lucide.createIcons();
+    }
 
-            // Atualizar contador baseado no filtro atual
-            if (currentTaskFilter === 'today') {
-                pendingCount = allTasks.filter(task => {
-                    if (task.completed) return false;
-                    if (!task.deadline) return false;
-                    const [y, m, d] = task.deadline.split('-').map(Number);
-                    const deadlineDate = new Date(y, m - 1, d);
-                    const today = new Date();
-                    today.setHours(0,0,0,0);
-                    return deadlineDate.getTime() === today.getTime();
-                }).length;
-            } else if (currentTaskFilter === 'urgent') {
-                pendingCount = allTasks.filter(task => {
-                    if (task.completed) return false;
-                    if (!task.deadline) return false;
-                    const [y, m, d] = task.deadline.split('-').map(Number);
-                    const deadlineDate = new Date(y, m - 1, d);
-                    const today = new Date();
-                    today.setHours(0,0,0,0);
-                    const tomorrow = new Date(today);
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    return deadlineDate <= tomorrow;
-                }).length;
-            } else if (currentTaskFilter === 'completed') {
+    // Função para navegar para uma tarefa específica
+    window.navigateToTask = (taskId) => {
+        taskToHighlight = taskId;
+        switchTab('tasks');
+    };
+
+    // Função para destacar uma tarefa na lista
+    function highlightTask(taskId) {
+        // Remover destaque de todas as tarefas
+        document.querySelectorAll('.card').forEach(card => {
+            card.classList.remove('highlighted');
+        });
+        
+        // Encontrar e destacar a tarefa específica
+        const taskElement = document.querySelector(`.card [onclick*="${taskId}"]`)?.closest('.card');
+        if (taskElement) {
+            taskElement.classList.add('highlighted');
+            
+            // Scroll para a tarefa
+            taskElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+        }
+    }
+
+    // Função para definir o filtro de tarefas
+    window.setTaskFilter = (filter) => {
+        currentTaskFilter = filter;
+        
+        // Remover classe active de todos os filtros
+        document.querySelectorAll('.metric-card').forEach(card => {
+            card.classList.remove('active');
+        });
+        
+        // Adicionar classe active ao filtro selecionado
+        const filterMap = {
+            'all': 'filter-all',
+            'today': 'filter-today',
+            'urgent': 'filter-urgent',
+            'completed': 'filter-completed'
+        };
+        
+        document.getElementById(filterMap[filter]).classList.add('active');
+        
+        // Atualizar título do filtro
+        const filterTitles = {
+            'all': 'Todas as tarefas',
+            'today': 'Tarefas para hoje',
+            'urgent': 'Tarefas urgentes',
+            'completed': 'Tarefas concluídas hoje'
+        };
+        
+        document.getElementById('filter-title').textContent = filter === 'all' ? 'Pendências' : filterTitles[filter];
+        document.getElementById('current-filter').textContent = filterTitles[filter];
+        
+        // Renderizar tarefas com o filtro aplicado
+        renderTasks();
+    };
+
+    // RENDER TASKS
+    function renderTasks() {
+        const pendingList = document.getElementById('pending-list');
+        const completedList = document.getElementById('completed-list');
+        pendingList.innerHTML = '';
+        completedList.innerHTML = '';
+        
+        let pendingCount = 0;
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        // Define data limite para "Urgente" (hoje e amanhã)
+        const urgentThreshold = new Date(today);
+        urgentThreshold.setDate(urgentThreshold.getDate() + 1); // Amanhã
+
+        allTasks.forEach(task => {
+            const company = allCompanies.find(c => c.id === task.companyId);
+            const companyName = company ? company.name : 'Empresa não encontrada';
+            
+            let deadlineHtml = '';
+            let isUrgent = false;
+            let isToday = false;
+            let isCompletedToday = false;
+
+            // Verificar se a tarefa deve ser mostrada com base no filtro atual
+            let showTask = true;
+            
+            if (currentTaskFilter === 'today' && task.deadline) {
+                const [y, m, d] = task.deadline.split('-').map(Number);
+                const deadlineDate = new Date(y, m - 1, d);
+                isToday = deadlineDate.getTime() === today.getTime();
+                if (!isToday || task.completed) showTask = false;
+            }
+            
+            if (currentTaskFilter === 'urgent' && task.deadline) {
+                const [y, m, d] = task.deadline.split('-').map(Number);
+                const deadlineDate = new Date(y, m - 1, d);
+                isUrgent = !task.completed && deadlineDate <= tomorrow;
+                if (!isUrgent) showTask = false;
+            }
+            
+            if (currentTaskFilter === 'completed' && task.completed) {
+                if (task.updatedAt) {
+                    const updatedDate = new Date(task.updatedAt.seconds * 1000);
+                    isCompletedToday = updatedDate.getDate() === today.getDate() && 
+                                     updatedDate.getMonth() === today.getMonth() && 
+                                     updatedDate.getFullYear() === today.getFullYear();
+                    if (!isCompletedToday) showTask = false;
+                } else {
+                    showTask = false;
+                }
+            }
+            
+            if (currentTaskFilter === 'completed' && !task.completed) {
+                showTask = false;
+            }
+            
+            // Se filtro "all", mostrar todas as pendentes no pending list
+            if (currentTaskFilter === 'all' && task.completed) {
+                showTask = false; // As concluídas vão para completed-list
+            }
+
+            if (!showTask && !task.completed) {
+                return; // Não mostrar esta tarefa no pending list
+            }
+
+            if (task.deadline) {
+                // Para evitar confusão de fuso horário ao criar a data a partir da string YYYY-MM-DD
+                const [y, m, d] = task.deadline.split('-').map(Number);
+                const deadlineDate = new Date(y, m - 1, d); // Mês é 0-indexado
+                
+                // Verifica urgência: Se data prazo <= amanhã E não concluída
+                if (!task.completed && deadlineDate <= urgentThreshold) {
+                    isUrgent = true;
+                }
+
+                const dateFormatted = deadlineDate.toLocaleDateString('pt-BR');
+                const badgeClass = isUrgent ? 'urgent' : 'normal';
+                const icon = isUrgent ? 'alert-circle' : 'calendar';
+                deadlineHtml = `<span class="deadline-badge ${badgeClass}"><i data-lucide="${icon}" width="10"></i> ${dateFormatted}</span>`;
+            }
+
+            const div = document.createElement('div');
+            // Aplica classe .urgent se for urgente
+            div.className = `card ${task.completed ? 'completed-card' : ''} ${isUrgent ? 'urgent' : ''} ${taskToHighlight === task.id ? 'highlighted' : ''}`;
+            
+            div.onclick = (e) => {
+                if(!e.target.closest('.check-btn') && !e.target.closest('.delete-btn')) openTaskModal(task);
+            };
+
+            // Determinar cor da categoria
+            let categoryColor = '';
+            let categoryIcon = 'file-text';
+            if (task.category === 'FISCAL') {
+                categoryColor = '#ef4444';
+                categoryIcon = 'receipt';
+            } else if (task.category === 'TRABALHISTA') {
+                categoryColor = '#3b82f6';
+                categoryIcon = 'users';
+            } else if (task.category === 'CONTABIL') {
+                categoryColor = '#10b981';
+                categoryIcon = 'calculator';
+            } else if (task.category === 'MUNICIPAL') {
+                categoryColor = '#8b5cf6';
+                categoryIcon = 'building';
+            } else {
+                categoryColor = '#6b7280';
+                categoryIcon = 'file-text';
+            }
+
+            div.innerHTML = `
+                <div class="card-content">
+                    <div class="card-header-row">
+                        <div class="card-company"><i data-lucide="building-2" width="12"></i> ${escapeHtml(companyName)}</div>
+                        ${deadlineHtml}
+                    </div>
+                    <div class="card-title">${escapeHtml(task.title)}</div>
+                    <div class="card-desc">
+                        <span style="color: ${categoryColor}; display: flex; align-items: center; gap: 5px;">
+                            <i data-lucide="${categoryIcon}" width="12"></i>
+                            ${task.category || 'Sem categoria'} • ${task.obligation || 'Sem obrigação'}
+                            ${task.value ? `• R$ ${parseFloat(task.value).toFixed(2)}` : ''}
+                        </span>
+                    </div>
+                    ${task.description ? `<div class="card-desc">${escapeHtml(task.description)}</div>` : ''}
+                </div>
+                <div class="card-actions">
+                    <button class="delete-btn" onclick="event.stopPropagation(); confirmDeleteTask('${task.id}', '${escapeHtml(task.title)}')">
+                        <i data-lucide="trash-2" width="18"></i>
+                    </button>
+                    <button class="check-btn" onclick="event.stopPropagation(); toggleTask('${task.id}', ${!task.completed})">
+                        <i data-lucide="${task.completed ? 'rotate-ccw' : 'check'}" width="18"></i>
+                    </button>
+                </div>
+            `;
+
+            if (task.completed) {
+                // Para tarefas concluídas, só mostrar se for filtro "completed" ou "all"
+                if (currentTaskFilter === 'completed' || currentTaskFilter === 'all') {
+                    completedList.appendChild(div);
+                }
+            } else {
+                pendingList.appendChild(div);
+                pendingCount++;
+            }
+        });
+
+        // Atualizar contador baseado no filtro atual
+        if (currentTaskFilter === 'today') {
+            pendingCount = allTasks.filter(task => {
+                if (task.completed) return false;
+                if (!task.deadline) return false;
+                const [y, m, d] = task.deadline.split('-').map(Number);
+                const deadlineDate = new Date(y, m - 1, d);
                 const today = new Date();
                 today.setHours(0,0,0,0);
-                pendingCount = allTasks.filter(task => {
-                    if (!task.completed || !task.updatedAt) return false;
-                    const updatedDate = new Date(task.updatedAt.seconds * 1000);
-                    return updatedDate.getDate() === today.getDate() && 
-                           updatedDate.getMonth() === today.getMonth() && 
-                           updatedDate.getFullYear() === today.getFullYear();
-                }).length;
-            }
-
-            document.getElementById('pending-count').textContent = pendingCount;
-            lucide.createIcons();
+                return deadlineDate.getTime() === today.getTime();
+            }).length;
+        } else if (currentTaskFilter === 'urgent') {
+            pendingCount = allTasks.filter(task => {
+                if (task.completed) return false;
+                if (!task.deadline) return false;
+                const [y, m, d] = task.deadline.split('-').map(Number);
+                const deadlineDate = new Date(y, m - 1, d);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                return deadlineDate <= tomorrow;
+            }).length;
+        } else if (currentTaskFilter === 'completed') {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            pendingCount = allTasks.filter(task => {
+                if (!task.completed || !task.updatedAt) return false;
+                const updatedDate = new Date(task.updatedAt.seconds * 1000);
+                return updatedDate.getDate() === today.getDate() && 
+                       updatedDate.getMonth() === today.getMonth() && 
+                       updatedDate.getFullYear() === today.getFullYear();
+            }).length;
         }
 
-        // RENDER COMPANIES
-        function renderCompanies() {
-            const list = document.getElementById('company-list');
-            const empty = document.getElementById('empty-companies');
-            list.innerHTML = '';
+        document.getElementById('pending-count').textContent = pendingCount;
+        
+        // Atualizar pins nos cards após renderizar
+        setTimeout(() => {
+            updateCardsPins();
+        }, 100);
+        
+        lucide.createIcons();
+    }
+
+    // RENDER COMPANIES
+    function renderCompanies() {
+        const list = document.getElementById('company-list');
+        const empty = document.getElementById('empty-companies');
+        list.innerHTML = '';
+        
+        document.getElementById('company-count').textContent = allCompanies.length;
+
+        if (allCompanies.length === 0) {
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+
+        allCompanies.forEach(comp => {
+            const div = document.createElement('div');
+            div.className = 'company-card';
             
-            document.getElementById('company-count').textContent = allCompanies.length;
-
-            if (allCompanies.length === 0) {
-                empty.classList.remove('hidden');
-                return;
+            // Determinar badge pelo regime/tipo
+            let badgeClass = '';
+            let badgeText = comp.regime || comp.type || '';
+            if (comp.type === 'MEI') {
+                badgeClass = 'badge-mei';
+                badgeText = 'MEI';
+            } else if (comp.regime === 'SIMPLES') {
+                badgeClass = 'badge-simples';
+                badgeText = 'Simples';
+            } else if (comp.regime === 'PRESUMIDO') {
+                badgeClass = 'badge-presumido';
+                badgeText = 'Presumido';
+            } else if (comp.regime === 'REAL') {
+                badgeClass = 'badge-real';
+                badgeText = 'Real';
+            } else if (comp.type === 'LTDA') {
+                badgeClass = 'badge-ltda';
+                badgeText = 'LTDA';
             }
-            empty.classList.add('hidden');
+            
+            div.innerHTML = `
+                <h4>${escapeHtml(comp.name)} ${badgeText ? `<span class="company-badge ${badgeClass}">${badgeText}</span>` : ''}</h4>
+                ${comp.cnpj ? `<p><i data-lucide="file-text" width="12"></i> ${escapeHtml(comp.cnpj)}</p>` : ''}
+                ${comp.phone ? `<p><i data-lucide="phone" width="12"></i> ${escapeHtml(comp.phone)}</p>` : ''}
+                ${comp.type ? `<p><i data-lucide="building" width="12"></i> ${comp.type}</p>` : ''}
+                ${comp.regime ? `<p><i data-lucide="trending-up" width="12"></i> ${comp.regime}</p>` : ''}
+                ${comp.cnae ? `<p><i data-lucide="hash" width="12"></i> CNAE: ${comp.cnae}</p>` : ''}
+                <div class="company-actions">
+                    <button class="icon-btn" title="Gerar tarefas automáticas" onclick="generateAllCompanyTasks('${comp.id}')">
+                        <i data-lucide="refresh-cw" width="16"></i>
+                    </button>
+                    <button class="icon-btn" onclick='openCompanyModal(${JSON.stringify(comp).replace(/'/g, "&#39;")})'>
+                        <i data-lucide="pencil" width="16"></i>
+                    </button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+        
+        // Atualizar pins nos cards após renderizar
+        setTimeout(() => {
+            updateCardsPins();
+        }, 100);
+        
+        lucide.createIcons();
+    }
 
-            allCompanies.forEach(comp => {
-                const div = document.createElement('div');
-                div.className = 'company-card';
-                
-                // Determinar badge pelo regime/tipo
-                let badgeClass = '';
-                let badgeText = comp.regime || comp.type || '';
-                if (comp.type === 'MEI') {
-                    badgeClass = 'badge-mei';
-                    badgeText = 'MEI';
-                } else if (comp.regime === 'SIMPLES') {
-                    badgeClass = 'badge-simples';
-                    badgeText = 'Simples';
-                } else if (comp.regime === 'PRESUMIDO') {
-                    badgeClass = 'badge-presumido';
-                    badgeText = 'Presumido';
-                } else if (comp.regime === 'REAL') {
-                    badgeClass = 'badge-real';
-                    badgeText = 'Real';
-                } else if (comp.type === 'LTDA') {
-                    badgeClass = 'badge-ltda';
-                    badgeText = 'LTDA';
-                }
-                
-                div.innerHTML = `
-    <h4>${escapeHtml(comp.name)} ${badgeText ? `<span class="company-badge ${badgeClass}">${badgeText}</span>` : ''}</h4>
-    ${comp.cnpj ? `<p><i data-lucide="file-text" width="12"></i> ${escapeHtml(comp.cnpj)}</p>` : ''}
-    ${comp.phone ? `<p><i data-lucide="phone" width="12"></i> ${escapeHtml(comp.phone)}</p>` : ''}
-    ${comp.type ? `<p><i data-lucide="building" width="12"></i> ${comp.type}</p>` : ''}
-    ${comp.regime ? `<p><i data-lucide="trending-up" width="12"></i> ${comp.regime}</p>` : ''}
-    ${comp.cnae ? `<p><i data-lucide="hash" width="12"></i> CNAE: ${comp.cnae}</p>` : ''}
-    <div class="company-actions">
-        <button class="icon-btn" title="Gerar tarefas automáticas" onclick="generateAllCompanyTasks('${comp.id}')">
-            <i data-lucide="refresh-cw" width="16"></i>
-        </button>
-        <button class="icon-btn" onclick='openCompanyModal(${JSON.stringify(comp).replace(/'/g, "&#39;")})'>
-            <i data-lucide="pencil" width="16"></i>
-        </button>
-    </div>
-`;
-                
-                div.innerHTML = `
-                    <h4>${escapeHtml(comp.name)} ${badgeText ? `<span class="company-badge ${badgeClass}">${badgeText}</span>` : ''}</h4>
-                    ${comp.cnpj ? `<p><i data-lucide="file-text" width="12"></i> ${escapeHtml(comp.cnpj)}</p>` : ''}
-                    ${comp.phone ? `<p><i data-lucide="phone" width="12"></i> ${escapeHtml(comp.phone)}</p>` : ''}
-                    ${comp.type ? `<p><i data-lucide="building" width="12"></i> ${comp.type}</p>` : ''}
-                    ${comp.regime ? `<p><i data-lucide="trending-up" width="12"></i> ${comp.regime}</p>` : ''}
-                    ${comp.cnae ? `<p><i data-lucide="hash" width="12"></i> CNAE: ${comp.cnae}</p>` : ''}
-                    <div class="company-actions">
-                        <button class="icon-btn" onclick='openCompanyModal(${JSON.stringify(comp).replace(/'/g, "&#39;")})'><i data-lucide="pencil" width="16"></i></button>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-            lucide.createIcons();
+    // TASK ACTIONS
+    window.openTaskModal = (task = null) => {
+        const modal = document.getElementById('modal-task');
+        const select = document.getElementById('task-company');
+        
+        select.innerHTML = '<option value="">Selecione a Empresa...</option>';
+        allCompanies.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            select.appendChild(opt);
+        });
+
+        if(allCompanies.length === 0) {
+            showToast('Cadastre uma empresa primeiro!', 'error');
+            switchTab('companies');
+            return;
         }
 
-        // TASK ACTIONS
-        window.openTaskModal = (task = null) => {
-            const modal = document.getElementById('modal-task');
-            const select = document.getElementById('task-company');
-            
-            select.innerHTML = '<option value="">Selecione a Empresa...</option>';
-            allCompanies.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.id;
-                opt.textContent = c.name;
-                select.appendChild(opt);
-            });
-
-            if(allCompanies.length === 0) {
-                showToast('Cadastre uma empresa primeiro!', 'error');
-                switchTab('companies');
-                return;
-            }
-
-            if (task) {
-                document.getElementById('modal-task-title').textContent = 'Editar Tarefa';
-                document.getElementById('task-id').value = task.id;
-                document.getElementById('task-title').value = task.title;
-                document.getElementById('task-desc').value = task.description || '';
-                document.getElementById('task-deadline').value = task.deadline || '';
-                document.getElementById('task-category').value = task.category || '';
-                document.getElementById('task-obligation').value = task.obligation || '';
-                document.getElementById('task-periodicity').value = task.periodicity || 'UNICA';
-                document.getElementById('task-reference').value = task.reference || '';
-                document.getElementById('task-value').value = task.value || '';
-                document.getElementById('task-payment-status').value = task.paymentStatus || 'PENDENTE';
-                document.getElementById('task-file-link').value = task.fileLink || '';
-                document.getElementById('task-internal-notes').value = task.internalNotes || '';
-                select.value = task.companyId || '';
-                document.getElementById('btn-delete-task').classList.remove('hidden');
-            } else {
-                document.getElementById('modal-task-title').textContent = 'Nova Tarefa';
-                document.getElementById('task-id').value = '';
-                document.getElementById('task-title').value = '';
-                document.getElementById('task-desc').value = '';
-                document.getElementById('task-deadline').value = '';
-                document.getElementById('task-category').value = '';
-                document.getElementById('task-obligation').value = '';
-                document.getElementById('task-periodicity').value = 'UNICA';
-                document.getElementById('task-reference').value = '';
-                document.getElementById('task-value').value = '';
-                document.getElementById('task-payment-status').value = 'PENDENTE';
-                document.getElementById('task-file-link').value = '';
-                document.getElementById('task-internal-notes').value = '';
-                select.value = '';
-                document.getElementById('btn-delete-task').classList.add('hidden');
-            }
-
-            modal.classList.remove('hidden');
-            lucide.createIcons();
-        };
-
-// Função para sugerir prazos baseados na obrigação
-window.saveTask = async () => {
-    const id = document.getElementById('task-id').value;
-    const companyId = document.getElementById('task-company').value;
-    const title = document.getElementById('task-title').value;
-    const description = document.getElementById('task-desc').value;
-    const deadline = document.getElementById('task-deadline').value;
-    
-    // NOVOS CAMPOS
-    const category = document.getElementById('task-category').value;
-    const obligation = document.getElementById('task-obligation').value;
-    const periodicity = document.getElementById('task-periodicity').value;
-    const reference = document.getElementById('task-reference').value;
-    const value = document.getElementById('task-value').value;
-    const paymentStatus = document.getElementById('task-payment-status').value;
-    const fileLink = document.getElementById('task-file-link').value;
-    const internalNotes = document.getElementById('task-internal-notes').value;
-
-    if (!companyId || !title || !category) return showToast('Campos obrigatórios faltando', 'error');
-
-    const data = { 
-        companyId, title, description, deadline,
-        // Novos campos
-        category, obligation, periodicity, reference, 
-        value: value ? parseFloat(value) : null,
-        paymentStatus, fileLink, internalNotes,
-        updatedAt: serverTimestamp() 
-    };
-    
-    try {
-        if (id) {
-            // EDITANDO tarefa existente - não gera recorrentes
-            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), data);
-            showToast('Tarefa atualizada', 'success');
+        if (task) {
+            document.getElementById('modal-task-title').textContent = 'Editar Tarefa';
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-title').value = task.title;
+            document.getElementById('task-desc').value = task.description || '';
+            document.getElementById('task-deadline').value = task.deadline || '';
+            document.getElementById('task-category').value = task.category || '';
+            document.getElementById('task-obligation').value = task.obligation || '';
+            document.getElementById('task-periodicity').value = task.periodicity || 'UNICA';
+            document.getElementById('task-reference').value = task.reference || '';
+            document.getElementById('task-value').value = task.value || '';
+            document.getElementById('task-payment-status').value = task.paymentStatus || 'PENDENTE';
+            document.getElementById('task-file-link').value = task.fileLink || '';
+            document.getElementById('task-internal-notes').value = task.internalNotes || '';
+            select.value = task.companyId || '';
+            document.getElementById('btn-delete-task').classList.remove('hidden');
         } else {
-            // NOVA tarefa - pode gerar recorrentes
-            data.completed = false;
-            data.createdAt = serverTimestamp();
-            
-            // Salvar a tarefa principal
-            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), data);
-            
-            // Se for tarefa recorrente, criar as futuras automaticamente
-            if (periodicity !== 'UNICA') {
-                const createdCount = await generateRecurringTasks(data, periodicity, reference);
-                if (createdCount > 0) {
-                    showToast(`Tarefa criada + ${createdCount} futuras geradas automaticamente!`, 'success');
+            document.getElementById('modal-task-title').textContent = 'Nova Tarefa';
+            document.getElementById('task-id').value = '';
+            document.getElementById('task-title').value = '';
+            document.getElementById('task-desc').value = '';
+            document.getElementById('task-deadline').value = '';
+            document.getElementById('task-category').value = '';
+            document.getElementById('task-obligation').value = '';
+            document.getElementById('task-periodicity').value = 'UNICA';
+            document.getElementById('task-reference').value = '';
+            document.getElementById('task-value').value = '';
+            document.getElementById('task-payment-status').value = 'PENDENTE';
+            document.getElementById('task-file-link').value = '';
+            document.getElementById('task-internal-notes').value = '';
+            select.value = '';
+            document.getElementById('btn-delete-task').classList.add('hidden');
+        }
+
+        modal.classList.remove('hidden');
+        lucide.createIcons();
+    };
+
+    // Função para sugerir prazos baseados na obrigação
+    window.saveTask = async () => {
+        const id = document.getElementById('task-id').value;
+        const companyId = document.getElementById('task-company').value;
+        const title = document.getElementById('task-title').value;
+        const description = document.getElementById('task-desc').value;
+        const deadline = document.getElementById('task-deadline').value;
+        
+        // NOVOS CAMPOS
+        const category = document.getElementById('task-category').value;
+        const obligation = document.getElementById('task-obligation').value;
+        const periodicity = document.getElementById('task-periodicity').value;
+        const reference = document.getElementById('task-reference').value;
+        const value = document.getElementById('task-value').value;
+        const paymentStatus = document.getElementById('task-payment-status').value;
+        const fileLink = document.getElementById('task-file-link').value;
+        const internalNotes = document.getElementById('task-internal-notes').value;
+
+        if (!companyId || !title || !category) return showToast('Campos obrigatórios faltando', 'error');
+
+        const data = { 
+            companyId, title, description, deadline,
+            // Novos campos
+            category, obligation, periodicity, reference, 
+            value: value ? parseFloat(value) : null,
+            paymentStatus, fileLink, internalNotes,
+            updatedAt: serverTimestamp() 
+        };
+        
+        try {
+            if (id) {
+                // EDITANDO tarefa existente - não gera recorrentes
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), data);
+                showToast('Tarefa atualizada', 'success');
+            } else {
+                // NOVA tarefa - pode gerar recorrentes
+                data.completed = false;
+                data.createdAt = serverTimestamp();
+                
+                // Salvar a tarefa principal
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), data);
+                
+                // Se for tarefa recorrente, criar as futuras automaticamente
+                if (periodicity !== 'UNICA') {
+                    const createdCount = await generateRecurringTasks(data, periodicity, reference);
+                    if (createdCount > 0) {
+                        showToast(`Tarefa criada + ${createdCount} futuras geradas automaticamente!`, 'success');
+                    } else {
+                        showToast('Tarefa criada', 'success');
+                    }
                 } else {
                     showToast('Tarefa criada', 'success');
                 }
-            } else {
-                showToast('Tarefa criada', 'success');
             }
+            closeModals();
+        } catch(e) { 
+            console.error(e); 
+            showToast('Erro ao salvar', 'error'); 
         }
-        closeModals();
-    } catch(e) { 
-        console.error(e); 
-        showToast('Erro ao salvar', 'error'); 
-    }
-};
-
-// FUNÇÃO NOVA: Gerar tarefas recorrentes automaticamente
-async function generateRecurringTasks(baseTask, periodicity, reference) {
-    if (!periodicity || periodicity === 'UNICA') return 0;
-    
-    const [refAno, refMes] = reference.split('-').map(Number);
-    let createdCount = 0;
-    
-    // Quantas tarefas futuras criar
-    let futureCount = 0;
-    if (periodicity === 'MENSAL') futureCount = 11; // Próximos 11 meses (total 12)
-    if (periodicity === 'TRIMESTRAL') futureCount = 3; // Próximos 3 trimestres (total 4)
-    if (periodicity === 'ANUAL') futureCount = 1; // Próximo ano (total 2)
-    
-    for (let i = 1; i <= futureCount; i++) {
-        try {
-            // Clonar a tarefa base
-            const newTask = { ...baseTask };
-            
-            // Calcular nova referência
-            let newRefAno = refAno;
-            let newRefMes = refMes;
-            
-            if (periodicity === 'MENSAL') {
-                newRefMes += i;
-                if (newRefMes > 12) {
-                    newRefMes -= 12;
-                    newRefAno += 1;
-                }
-            } else if (periodicity === 'TRIMESTRAL') {
-                newRefMes += (i * 3);
-                while (newRefMes > 12) {
-                    newRefMes -= 12;
-                    newRefAno += 1;
-                }
-            } else if (periodicity === 'ANUAL') {
-                newRefAno += i;
-            }
-            
-            const newReference = `${newRefAno}-${newRefMes.toString().padStart(2, '0')}`;
-            
-            // Calcular novo prazo baseado na obrigação
-            const novoPrazo = calculateNextDeadline(baseTask.obligation, newReference);
-            
-            // Atualizar dados da nova tarefa
-            newTask.reference = newReference;
-            newTask.deadline = novoPrazo;
-            newTask.title = `${baseTask.obligation || 'Tarefa'} - ${newReference}`;
-            newTask.createdAt = serverTimestamp();
-            newTask.updatedAt = serverTimestamp();
-            newTask.completed = false;
-            
-            // Salvar no banco
-            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), newTask);
-            createdCount++;
-            
-        } catch (error) {
-            console.error(`Erro ao criar tarefa recorrente ${i}:`, error);
-        }
-    }
-    
-    return createdCount;
-}
-
-// FUNÇÃO: Gerar todas as obrigações recorrentes para uma empresa
-window.generateAllCompanyTasks = async (companyId) => {
-    const company = allCompanies.find(c => c.id === companyId);
-    if (!company) {
-        showToast('Empresa não encontrada', 'error');
-        return;
-    }
-    
-    // Mapear obrigações por regime tributário
-    const obrigacoesPorRegime = {
-        'SIMPLES': [
-            { obligation: 'DAS', periodicity: 'MENSAL', category: 'FISCAL' }
-        ],
-        'PRESUMIDO': [
-            { obligation: 'IRPJ', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
-            { obligation: 'CSLL', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
-            { obligation: 'PIS_COFINS', periodicity: 'MENSAL', category: 'FISCAL' }
-        ],
-        'REAL': [
-            { obligation: 'IRPJ', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
-            { obligation: 'CSLL', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
-            { obligation: 'EFD', periodicity: 'MENSAL', category: 'FISCAL' }
-        ],
-        'MEI': [
-            { obligation: 'DAS', periodicity: 'MENSAL', category: 'FISCAL' }
-        ]
     };
-    
-    // Se tem funcionários, adiciona GPS
-    if (company.hasEmployees === 'true') {
-        obrigacoesPorRegime[company.regime]?.push(
-            { obligation: 'GPS', periodicity: 'MENSAL', category: 'TRABALHISTA' }
-        );
-    }
-    
-    const obrigacoes = obrigacoesPorRegime[company.regime] || [];
-    
-    if (obrigacoes.length === 0) {
-        showToast(`Nenhuma obrigação definida para regime ${company.regime}`, 'warning');
-        return;
-    }
-    
-    let createdCount = 0;
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth() + 1;
-    const anoAtual = hoje.getFullYear();
-    
-    for (const obrig of obrigacoes) {
-        try {
-            const reference = `${anoAtual}-${mesAtual.toString().padStart(2, '0')}`;
-            const deadline = calculateNextDeadline(obrig.obligation, reference);
-            
-            const baseTask = {
-                companyId: companyId,
-                title: `${obrig.obligation} - ${reference}`,
-                description: `Obrigação ${oblig.periodicity.toLowerCase()} do regime ${company.regime}`,
-                deadline: deadline,
-                category: obrig.category,
-                obligation: obrig.obligation,
-                periodicity: obrig.periodicity,
-                reference: reference,
-                value: null,
-                paymentStatus: 'PENDENTE',
-                fileLink: '',
-                internalNotes: `Gerada automaticamente para ${company.name}`,
-                completed: false,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            };
-            
-            // Criar tarefa principal
-            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), baseTask);
-            
-            // Gerar recorrentes
-            const recorrentesCount = await generateRecurringTasks(baseTask, obrig.periodicity, reference);
-            createdCount += (1 + recorrentesCount);
-            
-        } catch (error) {
-            console.error(`Erro ao criar ${obrig.obligation}:`, error);
-        }
-    }
-    
-    showToast(`${createdCount} tarefas geradas para ${company.name}!`, 'success');
-};
 
-// FUNÇÃO AUXILIAR: Calcular próximo prazo
-function calculateNextDeadline(obligation, reference) {
-    const [ano, mes] = reference.split('-').map(Number);
-    
-    // Datas de vencimento padrão
-    const vencimentosPadrao = {
-        'DAS': 20,
-        'GPS': 20,
-        'IRPJ': 30,
-        'CSLL': 30,
-        'PIS_COFINS': 20,
-        'EFD': 15,
-        'DIRF': 30,
-        'DCTF': 30,
-        'RAIS': 30,
-        'CAGED': 20,
-        'SEFIP': 20,
-        'DARF': 30
-    };
-    
-    const dia = vencimentosPadrao[obligation] || 20;
-    return `${ano}-${mes.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
-}
-
-        window.toggleTask = async (id, status) => {
+    // FUNÇÃO NOVA: Gerar tarefas recorrentes automaticamente
+    async function generateRecurringTasks(baseTask, periodicity, reference) {
+        if (!periodicity || periodicity === 'UNICA') return 0;
+        
+        const [refAno, refMes] = reference.split('-').map(Number);
+        let createdCount = 0;
+        
+        // Quantas tarefas futuras criar
+        let futureCount = 0;
+        if (periodicity === 'MENSAL') futureCount = 11; // Próximos 11 meses (total 12)
+        if (periodicity === 'TRIMESTRAL') futureCount = 3; // Próximos 3 trimestres (total 4)
+        if (periodicity === 'ANUAL') futureCount = 1; // Próximo ano (total 2)
+        
+        for (let i = 1; i <= futureCount; i++) {
             try {
-                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), { 
-                    completed: status,
-                    updatedAt: serverTimestamp() 
-                });
-                showToast(status ? 'Tarefa concluída!' : 'Tarefa reaberta', 'success');
-            } catch(e) { showToast('Erro ao atualizar', 'error'); }
-        };
-
-        // Função para confirmar exclusão de tarefa
-        window.confirmDeleteTask = (taskId = null, taskTitle = null) => {
-            if (taskId) {
-                // Exclusão direta da lista
-                deletePending = { type: 'task', id: taskId };
-                document.getElementById('delete-confirm-title').textContent = 'Excluir Tarefa';
-                document.getElementById('delete-confirm-message').textContent = `Tem certeza que deseja excluir a tarefa "${taskTitle || 'esta tarefa'}"? Esta ação não pode ser desfeita.`;
-            } else {
-                // Exclusão do modal de edição
-                const taskIdFromModal = document.getElementById('task-id').value;
-                const taskTitleFromModal = document.getElementById('task-title').value;
-                deletePending = { type: 'task', id: taskIdFromModal };
-                document.getElementById('delete-confirm-title').textContent = 'Excluir Tarefa';
-                document.getElementById('delete-confirm-message').textContent = `Tem certeza que deseja excluir a tarefa "${taskTitleFromModal || 'esta tarefa'}"? Esta ação não pode ser desfeita.`;
-            }
-            
-            document.getElementById('modal-delete-confirm').classList.remove('hidden');
-        };
-
-        // Função para excluir tarefas de uma empresa antes de excluir a empresa
-        async function deleteCompanyTasks(companyId) {
-            try {
-                const tasksRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks');
-                const q = query(tasksRef, where('companyId', '==', companyId));
-                const querySnapshot = await getDocs(q);
+                // Clonar a tarefa base
+                const newTask = { ...baseTask };
                 
-                const deletePromises = [];
-                querySnapshot.forEach((docSnapshot) => {
-                    deletePromises.push(deleteDoc(docSnapshot.ref));
-                });
+                // Calcular nova referência
+                let newRefAno = refAno;
+                let newRefMes = refMes;
                 
-                await Promise.all(deletePromises);
-                return querySnapshot.size; // Retorna quantas tarefas foram excluídas
+                if (periodicity === 'MENSAL') {
+                    newRefMes += i;
+                    if (newRefMes > 12) {
+                        newRefMes -= 12;
+                        newRefAno += 1;
+                    }
+                } else if (periodicity === 'TRIMESTRAL') {
+                    newRefMes += (i * 3);
+                    while (newRefMes > 12) {
+                        newRefMes -= 12;
+                        newRefAno += 1;
+                    }
+                } else if (periodicity === 'ANUAL') {
+                    newRefAno += i;
+                }
+                
+                const newReference = `${newRefAno}-${newRefMes.toString().padStart(2, '0')}`;
+                
+                // Calcular novo prazo baseado na obrigação
+                const novoPrazo = calculateNextDeadline(baseTask.obligation, newReference);
+                
+                // Atualizar dados da nova tarefa
+                newTask.reference = newReference;
+                newTask.deadline = novoPrazo;
+                newTask.title = `${baseTask.obligation || 'Tarefa'} - ${newReference}`;
+                newTask.createdAt = serverTimestamp();
+                newTask.updatedAt = serverTimestamp();
+                newTask.completed = false;
+                
+                // Salvar no banco
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), newTask);
+                createdCount++;
+                
             } catch (error) {
-                console.error('Erro ao excluir tarefas da empresa:', error);
-                throw error;
+                console.error(`Erro ao criar tarefa recorrente ${i}:`, error);
             }
         }
+        
+        return createdCount;
+    }
 
-        // Função para confirmar exclusão de empresa
-        window.confirmDeleteCompany = () => {
-            const companyId = document.getElementById('company-id').value;
-            const companyName = document.getElementById('company-name').value;
-            
-            deletePending = { type: 'company', id: companyId };
-            document.getElementById('delete-confirm-title').textContent = 'Excluir Empresa';
-            document.getElementById('delete-confirm-message').textContent = `Tem certeza que deseja excluir a empresa "${companyName}"? Todas as tarefas vinculadas a esta empresa também serão excluídas. Esta ação não pode ser desfeita.`;
-            
-            document.getElementById('modal-delete-confirm').classList.remove('hidden');
+    // FUNÇÃO: Gerar todas as obrigações recorrentes para uma empresa
+    window.generateAllCompanyTasks = async (companyId) => {
+        const company = allCompanies.find(c => c.id === companyId);
+        if (!company) {
+            showToast('Empresa não encontrada', 'error');
+            return;
+        }
+        
+        // Mapear obrigações por regime tributário
+        const obrigacoesPorRegime = {
+            'SIMPLES': [
+                { obligation: 'DAS', periodicity: 'MENSAL', category: 'FISCAL' }
+            ],
+            'PRESUMIDO': [
+                { obligation: 'IRPJ', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
+                { obligation: 'CSLL', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
+                { obligation: 'PIS_COFINS', periodicity: 'MENSAL', category: 'FISCAL' }
+            ],
+            'REAL': [
+                { obligation: 'IRPJ', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
+                { obligation: 'CSLL', periodicity: 'TRIMESTRAL', category: 'FISCAL' },
+                { obligation: 'EFD', periodicity: 'MENSAL', category: 'FISCAL' }
+            ],
+            'MEI': [
+                { obligation: 'DAS', periodicity: 'MENSAL', category: 'FISCAL' }
+            ]
         };
-
-        // Função para executar a exclusão confirmada
-        window.confirmDelete = async () => {
-            if (!deletePending.type || !deletePending.id) {
-                showToast('Erro ao excluir: item não identificado', 'error');
-                closeModals();
-                return;
-            }
-
+        
+        // Se tem funcionários, adiciona GPS
+        if (company.hasEmployees === 'true') {
+            obrigacoesPorRegime[company.regime]?.push(
+                { obligation: 'GPS', periodicity: 'MENSAL', category: 'TRABALHISTA' }
+            );
+        }
+        
+        const obrigacoes = obrigacoesPorRegime[company.regime] || [];
+        
+        if (obrigacoes.length === 0) {
+            showToast(`Nenhuma obrigação definida para regime ${company.regime}`, 'warning');
+            return;
+        }
+        
+        let createdCount = 0;
+        const hoje = new Date();
+        const mesAtual = hoje.getMonth() + 1;
+        const anoAtual = hoje.getFullYear();
+        
+        for (const obrig of obrigacoes) {
             try {
-                if (deletePending.type === 'task') {
-                    // Excluir tarefa
-                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', deletePending.id));
-                    showToast('Tarefa excluída com sucesso', 'success');
-                } else if (deletePending.type === 'company') {
-                    // Excluir tarefas da empresa primeiro
-                    const tasksDeleted = await deleteCompanyTasks(deletePending.id);
-                    
-                    // Agora excluir a empresa
-                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'companies', deletePending.id));
-                    
-                    showToast(`Empresa excluída com sucesso (${tasksDeleted} tarefa(s) removida(s))`, 'success');
-                }
+                const reference = `${anoAtual}-${mesAtual.toString().padStart(2, '0')}`;
+                const deadline = calculateNextDeadline(obrig.obligation, reference);
                 
-                closeModals();
-                deletePending = { type: null, id: null }; // Resetar
-            } catch(e) { 
-                console.error(e);
-                showToast('Erro ao excluir', 'error');
-                deletePending = { type: null, id: null }; // Resetar mesmo em caso de erro
+                const baseTask = {
+                    companyId: companyId,
+                    title: `${obrig.obligation} - ${reference}`,
+                    description: `Obrigação ${oblig.periodicity.toLowerCase()} do regime ${company.regime}`,
+                    deadline: deadline,
+                    category: obrig.category,
+                    obligation: obrig.obligation,
+                    periodicity: obrig.periodicity,
+                    reference: reference,
+                    value: null,
+                    paymentStatus: 'PENDENTE',
+                    fileLink: '',
+                    internalNotes: `Gerada automaticamente para ${company.name}`,
+                    completed: false,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+                
+                // Criar tarefa principal
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), baseTask);
+                
+                // Gerar recorrentes
+                const recorrentesCount = await generateRecurringTasks(baseTask, obrig.periodicity, reference);
+                createdCount += (1 + recorrentesCount);
+                
+            } catch (error) {
+                console.error(`Erro ao criar ${obrig.obligation}:`, error);
             }
-        };
+        }
+        
+        showToast(`${createdCount} tarefas geradas para ${company.name}!`, 'success');
+    };
 
-        // COMPANY ACTIONS
-        window.openCompanyModal = (comp = null) => {
-            if (comp) {
-                document.getElementById('modal-company-title').textContent = 'Editar Empresa';
-                document.getElementById('company-id').value = comp.id;
-                document.getElementById('company-name').value = comp.name;
-                document.getElementById('company-cnpj').value = comp.cnpj || '';
-                document.getElementById('company-phone').value = comp.phone || '';
-                document.getElementById('company-type').value = comp.type || '';
-                document.getElementById('company-regime').value = comp.regime || '';
-                document.getElementById('company-percentual').value = comp.percentual || '8';
-                document.getElementById('company-cnae').value = comp.cnae || '';
-                document.getElementById('company-open-date').value = comp.openDate || '';
-                document.getElementById('company-address').value = comp.address || '';
-                document.getElementById('company-email').value = comp.email || '';
-                document.getElementById('company-responsible').value = comp.responsible || '';
-                document.getElementById('company-has-employees').value = comp.hasEmployees || '';
-                document.getElementById('company-status').value = comp.status || 'ATIVA';
-                document.getElementById('btn-delete-company').classList.remove('hidden');
-                
-                // Atualizar campos do regime
-                updateRegimeFields();
-            } else {
-                document.getElementById('modal-company-title').textContent = 'Cadastrar Empresa';
-                document.getElementById('company-id').value = '';
-                document.getElementById('company-name').value = '';
-                document.getElementById('company-cnpj').value = '';
-                document.getElementById('company-phone').value = '';
-                document.getElementById('company-type').value = '';
-                document.getElementById('company-regime').value = '';
-                document.getElementById('company-percentual').value = '8';
-                document.getElementById('company-cnae').value = '';
-                document.getElementById('company-open-date').value = '';
-                document.getElementById('company-address').value = '';
-                document.getElementById('company-email').value = '';
-                document.getElementById('company-responsible').value = '';
-                document.getElementById('company-has-employees').value = '';
-                document.getElementById('company-status').value = 'ATIVA';
-                document.getElementById('btn-delete-company').classList.add('hidden');
-                
-                // Esconder campos do regime presumido
-                document.getElementById('presumido-fields').style.display = 'none';
-            }
-            document.getElementById('modal-company').classList.remove('hidden');
-            lucide.createIcons();
+    // FUNÇÃO AUXILIAR: Calcular próximo prazo
+    function calculateNextDeadline(obligation, reference) {
+        const [ano, mes] = reference.split('-').map(Number);
+        
+        // Datas de vencimento padrão
+        const vencimentosPadrao = {
+            'DAS': 20,
+            'GPS': 20,
+            'IRPJ': 30,
+            'CSLL': 30,
+            'PIS_COFINS': 20,
+            'EFD': 15,
+            'DIRF': 30,
+            'DCTF': 30,
+            'RAIS': 30,
+            'CAGED': 20,
+            'SEFIP': 20,
+            'DARF': 30
         };
+        
+        const dia = vencimentosPadrao[obligation] || 20;
+        return `${ano}-${mes.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+    }
 
-        window.saveCompany = async () => {
-            const id = document.getElementById('company-id').value;
-            const name = document.getElementById('company-name').value;
-            const cnpj = document.getElementById('company-cnpj').value;
-            const phone = document.getElementById('company-phone').value;
+    window.toggleTask = async (id, status) => {
+        try {
+            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), { 
+                completed: status,
+                updatedAt: serverTimestamp() 
+            });
+            showToast(status ? 'Tarefa concluída!' : 'Tarefa reaberta', 'success');
+        } catch(e) { showToast('Erro ao atualizar', 'error'); }
+    };
+
+    // Função para confirmar exclusão de tarefa
+    window.confirmDeleteTask = (taskId = null, taskTitle = null) => {
+        if (taskId) {
+            // Exclusão direta da lista
+            deletePending = { type: 'task', id: taskId };
+            document.getElementById('delete-confirm-title').textContent = 'Excluir Tarefa';
+            document.getElementById('delete-confirm-message').textContent = `Tem certeza que deseja excluir a tarefa "${taskTitle || 'esta tarefa'}"? Esta ação não pode ser desfeita.`;
+        } else {
+            // Exclusão do modal de edição
+            const taskIdFromModal = document.getElementById('task-id').value;
+            const taskTitleFromModal = document.getElementById('task-title').value;
+            deletePending = { type: 'task', id: taskIdFromModal };
+            document.getElementById('delete-confirm-title').textContent = 'Excluir Tarefa';
+            document.getElementById('delete-confirm-message').textContent = `Tem certeza que deseja excluir a tarefa "${taskTitleFromModal || 'esta tarefa'}"? Esta ação não pode ser desfeita.`;
+        }
+        
+        document.getElementById('modal-delete-confirm').classList.remove('hidden');
+    };
+
+    // Função para excluir tarefas de uma empresa antes de excluir a empresa
+    async function deleteCompanyTasks(companyId) {
+        try {
+            const tasksRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks');
+            const q = query(tasksRef, where('companyId', '==', companyId));
+            const querySnapshot = await getDocs(q);
             
-            // NOVOS CAMPOS
-            const type = document.getElementById('company-type').value;
-            const regime = document.getElementById('company-regime').value;
-            const percentual = document.getElementById('company-percentual')?.value || null;
-            const cnae = document.getElementById('company-cnae').value;
-            const openDate = document.getElementById('company-open-date').value;
-            const address = document.getElementById('company-address').value;
-            const email = document.getElementById('company-email').value;
-            const responsible = document.getElementById('company-responsible').value;
-            const hasEmployees = document.getElementById('company-has-employees').value;
-            const status = document.getElementById('company-status').value;
-
-            if (!name || !type || !regime) return showToast('Campos obrigatórios faltando', 'error');
-
-            const data = { 
-                name, cnpj, phone, 
-                // Novos campos
-                type, regime, percentual, cnae, openDate, 
-                address, email, responsible, hasEmployees, status,
-                updatedAt: serverTimestamp()
-            };
+            const deletePromises = [];
+            querySnapshot.forEach((docSnapshot) => {
+                deletePromises.push(deleteDoc(docSnapshot.ref));
+            });
             
-            // Se é novo cadastro, adicionar createdAt
-            if (!id) {
-                data.createdAt = serverTimestamp();
-            }
+            await Promise.all(deletePromises);
+            return querySnapshot.size; // Retorna quantas tarefas foram excluídas
+        } catch (error) {
+            console.error('Erro ao excluir tarefas da empresa:', error);
+            throw error;
+        }
+    }
 
-            try {
-                if (id) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'companies', id), data);
-                    showToast('Empresa atualizada', 'success');
-                } else {
-                    await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'companies'), data);
-                    showToast('Empresa cadastrada', 'success');
-                }
-                closeModals();
-            } catch(e) { console.error(e); showToast('Erro ao salvar', 'error'); }
-        };
+    // Função para confirmar exclusão de empresa
+    window.confirmDeleteCompany = () => {
+        const companyId = document.getElementById('company-id').value;
+        const companyName = document.getElementById('company-name').value;
+        
+        deletePending = { type: 'company', id: companyId };
+        document.getElementById('delete-confirm-title').textContent = 'Excluir Empresa';
+        document.getElementById('delete-confirm-message').textContent = `Tem certeza que deseja excluir a empresa "${companyName}"? Todas as tarefas vinculadas a esta empresa também serão excluídas. Esta ação não pode ser desfeita.`;
+        
+        document.getElementById('modal-delete-confirm').classList.remove('hidden');
+    };
 
-        // UI HELPERS
-        window.closeModals = () => {
-            document.querySelectorAll('.modal-overlay').forEach(el => el.classList.add('hidden'));
-            deletePending = { type: null, id: null }; // Resetar ao fechar modais
-        };
-
-        function showToast(msg, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = type === 'success' ? `<i data-lucide="check"></i> ${msg}` : 
-                              type === 'warning' ? `<i data-lucide="alert-triangle"></i> ${msg}` :
-                              `<i data-lucide="alert-circle"></i> ${msg}`;
-            document.getElementById('toast-container').appendChild(toast);
-            lucide.createIcons();
-            setTimeout(() => toast.remove(), 3000);
+    // Função para executar a exclusão confirmada
+    window.confirmDelete = async () => {
+        if (!deletePending.type || !deletePending.id) {
+            showToast('Erro ao excluir: item não identificado', 'error');
+            closeModals();
+            return;
         }
 
-        function escapeHtml(text) {
-            if (!text) return "";
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        try {
+            if (deletePending.type === 'task') {
+                // Excluir tarefa
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', deletePending.id));
+                showToast('Tarefa excluída com sucesso', 'success');
+            } else if (deletePending.type === 'company') {
+                // Excluir tarefas da empresa primeiro
+                const tasksDeleted = await deleteCompanyTasks(deletePending.id);
+                
+                // Agora excluir a empresa
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'companies', deletePending.id));
+                
+                showToast(`Empresa excluída com sucesso (${tasksDeleted} tarefa(s) removida(s))`, 'success');
+            } else if (deletePending.type === 'pin') {
+                // Excluir pin/etiqueta
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'pins', deletePending.id));
+                showToast('Etiqueta excluída com sucesso', 'success');
+            }
+            
+            closeModals();
+            deletePending = { type: null, id: null };
+        } catch(e) { 
+            console.error(e);
+            showToast('Erro ao excluir', 'error');
+            deletePending = { type: null, id: null }; // Resetar mesmo em caso de erro
         }
+    };
 
-        // Inicializar ícones e definir filtro inicial
+    // COMPANY ACTIONS
+    window.openCompanyModal = (comp = null) => {
+        if (comp) {
+            document.getElementById('modal-company-title').textContent = 'Editar Empresa';
+            document.getElementById('company-id').value = comp.id;
+            document.getElementById('company-name').value = comp.name;
+            document.getElementById('company-cnpj').value = comp.cnpj || '';
+            document.getElementById('company-phone').value = comp.phone || '';
+            document.getElementById('company-type').value = comp.type || '';
+            document.getElementById('company-regime').value = comp.regime || '';
+            document.getElementById('company-percentual').value = comp.percentual || '8';
+            document.getElementById('company-cnae').value = comp.cnae || '';
+            document.getElementById('company-open-date').value = comp.openDate || '';
+            document.getElementById('company-address').value = comp.address || '';
+            document.getElementById('company-email').value = comp.email || '';
+            document.getElementById('company-responsible').value = comp.responsible || '';
+            document.getElementById('company-has-employees').value = comp.hasEmployees || '';
+            document.getElementById('company-status').value = comp.status || 'ATIVA';
+            document.getElementById('btn-delete-company').classList.remove('hidden');
+            
+            // Atualizar campos do regime
+            updateRegimeFields();
+        } else {
+            document.getElementById('modal-company-title').textContent = 'Cadastrar Empresa';
+            document.getElementById('company-id').value = '';
+            document.getElementById('company-name').value = '';
+            document.getElementById('company-cnpj').value = '';
+            document.getElementById('company-phone').value = '';
+            document.getElementById('company-type').value = '';
+            document.getElementById('company-regime').value = '';
+            document.getElementById('company-percentual').value = '8';
+            document.getElementById('company-cnae').value = '';
+            document.getElementById('company-open-date').value = '';
+            document.getElementById('company-address').value = '';
+            document.getElementById('company-email').value = '';
+            document.getElementById('company-responsible').value = '';
+            document.getElementById('company-has-employees').value = '';
+            document.getElementById('company-status').value = 'ATIVA';
+            document.getElementById('btn-delete-company').classList.add('hidden');
+            
+            // Esconder campos do regime presumido
+            document.getElementById('presumido-fields').style.display = 'none';
+        }
+        document.getElementById('modal-company').classList.remove('hidden');
         lucide.createIcons();
-        setTimeout(() => {
-            if (document.getElementById('filter-all')) {
-                setTaskFilter('all');
+    };
+
+    window.saveCompany = async () => {
+        const id = document.getElementById('company-id').value;
+        const name = document.getElementById('company-name').value;
+        const cnpj = document.getElementById('company-cnpj').value;
+        const phone = document.getElementById('company-phone').value;
+        
+        // NOVOS CAMPOS
+        const type = document.getElementById('company-type').value;
+        const regime = document.getElementById('company-regime').value;
+        const percentual = document.getElementById('company-percentual')?.value || null;
+        const cnae = document.getElementById('company-cnae').value;
+        const openDate = document.getElementById('company-open-date').value;
+        const address = document.getElementById('company-address').value;
+        const email = document.getElementById('company-email').value;
+        const responsible = document.getElementById('company-responsible').value;
+        const hasEmployees = document.getElementById('company-has-employees').value;
+        const status = document.getElementById('company-status').value;
+
+        if (!name || !type || !regime) return showToast('Campos obrigatórios faltando', 'error');
+
+        const data = { 
+            name, cnpj, phone, 
+            // Novos campos
+            type, regime, percentual, cnae, openDate, 
+            address, email, responsible, hasEmployees, status,
+            updatedAt: serverTimestamp()
+        };
+        
+        // Se é novo cadastro, adicionar createdAt
+        if (!id) {
+            data.createdAt = serverTimestamp();
+        }
+
+        try {
+            if (id) {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'companies', id), data);
+                showToast('Empresa atualizada', 'success');
+            } else {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'companies'), data);
+                showToast('Empresa cadastrada', 'success');
             }
-        }, 100);
-    </script>
+            closeModals();
+        } catch(e) { console.error(e); showToast('Erro ao salvar', 'error'); }
+    };
+
+    // UI HELPERS
+    window.closeModals = () => {
+        document.querySelectorAll('.modal-overlay').forEach(el => el.classList.add('hidden'));
+        deletePending = { type: null, id: null }; // Resetar ao fechar modais
+    };
+
+    function showToast(msg, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = type === 'success' ? `<i data-lucide="check"></i> ${msg}` : 
+                          type === 'warning' ? `<i data-lucide="alert-triangle"></i> ${msg}` :
+                          `<i data-lucide="alert-circle"></i> ${msg}`;
+        document.getElementById('toast-container').appendChild(toast);
+        lucide.createIcons();
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function escapeHtml(text) {
+        if (!text) return "";
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // Inicializar ícones e definir filtro inicial
+    lucide.createIcons();
+    setTimeout(() => {
+        if (document.getElementById('filter-all')) {
+            setTaskFilter('all');
+        }
+    }, 100);
+</script>
 </body>
-</html>
+    </html>
