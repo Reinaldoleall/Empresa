@@ -3113,16 +3113,50 @@
                 </button>
             </nav>
 
-            <div class="user-actions">
+            <div class="user-actions" style="position: relative;">
                 <button class="icon-btn" id="notification-btn" title="Notificações"
-                    style="position: relative; margin-right: 10px;">
+                    style="position: relative; margin-right: 4px;">
                     <i data-lucide="bell" width="20"></i>
                     <span id="notification-badge" class="hidden"
                         style="position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: var(--danger); border-radius: 50%;"></span>
                 </button>
-                <button class="logout-btn" id="logout-btn" title="Sair">
-                    <i data-lucide="log-out" width="20"></i>
+
+                <!-- USER PROFILE BUTTON -->
+                <button class="user-profile" onclick="toggleUserMenu(event)">
+                    <div class="user-avatar" id="header-user-avatar">U</div>
+                    <span class="user-name" id="header-user-name">Usuário</span>
+                    <i data-lucide="chevron-down" width="16" style="margin-left: 4px; opacity: 0.5;"></i>
                 </button>
+
+                <!-- USER DROPDOWN -->
+                <div class="user-dropdown" id="user-dropdown">
+                    <div class="dropdown-header">
+                        <div class="user-avatar" id="dropdown-user-avatar">U</div>
+                        <div class="dropdown-user-info">
+                            <div class="user-name" id="dropdown-user-name">Usuário</div>
+                            <div class="dropdown-user-email" id="dropdown-user-email">email@exemplo.com</div>
+                        </div>
+                    </div>
+                    <div class="dropdown-menu">
+                        <div
+                            style="padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--on-surface-variant); text-transform: uppercase; letter-spacing: 0.5px;">
+                            Meus Escritórios
+                        </div>
+                        <div id="workspace-list">
+                            <!-- Workspaces will be populated here -->
+                            <button class="dropdown-item active" onclick="switchWorkspace(currentUser.uid)">
+                                <i data-lucide="check" width="16"></i>
+                                Meu Workspace
+                            </button>
+                        </div>
+
+                        <div style="height: 1px; background: var(--outline-variant); margin: 8px 0;"></div>
+
+                        <button class="dropdown-item logout" id="logout-btn">
+                            <i data-lucide="log-out" width="18"></i> Sair
+                        </button>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -12452,13 +12486,144 @@
             }
 
             // Inicializar sistema de colaboração após login
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 if (user) {
+                    console.log("Usuário logado:", user.email);
+
+                    // Atualizar UI do header
+                    document.getElementById('header-user-avatar').textContent = user.email.charAt(0).toUpperCase();
+                    document.getElementById('header-user-name').textContent = user.displayName || user.email.split('@')[0];
+                    document.getElementById('dropdown-user-avatar').textContent = user.email.charAt(0).toUpperCase();
+                    document.getElementById('dropdown-user-name').textContent = user.displayName || user.email.split('@')[0];
+                    document.getElementById('dropdown-user-email').textContent = user.email;
+
+                    // Carregar workspaces
+                    await loadUserWorkspaces(user);
+
                     setTimeout(() => {
                         RealTimeCollaboration.init();
                     }, 3000);
                 }
             });
+
+            // ==========================================
+            // LÓGICA DE WORKSPACES (CORREÇÃO)
+            // ==========================================
+
+            window.toggleUserMenu = (e) => {
+                e.stopPropagation();
+                const dropdown = document.getElementById('user-dropdown');
+                dropdown.classList.toggle('show');
+            };
+
+            // Fechar dropdown ao clicar fora
+            document.addEventListener('click', (e) => {
+                const dropdown = document.getElementById('user-dropdown');
+                const profileBtn = document.querySelector('.user-profile');
+
+                if (dropdown && dropdown.classList.contains('show')) {
+                    if (!dropdown.contains(e.target) && !profileBtn.contains(e.target)) {
+                        dropdown.classList.remove('show');
+                    }
+                }
+            });
+
+            window.loadUserWorkspaces = async (user) => {
+                const listContainer = document.getElementById('workspace-list');
+                if (!listContainer) return;
+
+                // 1. Adicionar meu pròprio workspace
+                let html = `
+                    <button class="dropdown-item ${window.currentWorkspaceOwnerId === user.uid ? 'active' : ''}" 
+                            onclick="switchWorkspace('${user.uid}', '${user.displayName || 'Meu Workspace'}')">
+                        <i data-lucide="${window.currentWorkspaceOwnerId === user.uid ? 'check' : 'user'}" width="16"></i>
+                        Meu Workspace
+                    </button>
+                `;
+
+                try {
+                    // 2. Buscar workspaces compartilhados (onde sou colaborador)
+                    // Usa collectionGroup para buscar em TODAS as coleções 'collaborators' do banco
+                    const q = query(collectionGroup(db, 'collaborators'), where('email', '==', user.email));
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        html += `<div style="padding: 8px 16px; font-size: 11px; font-weight: 600; color: var(--on-surface-variant); margin-top: 8px;">COMPARTILHADOS COMIGO</div>`;
+
+                        // Para cada convite, descobrir quem é o dono do workspace
+                        for (const docSnapshot of querySnapshot.docs) {
+                            // A estrutura é: artifacts/{appId}/users/{OWNER_ID}/collaborators/{COLLAB_ID}
+                            // O parent do parent deve ser o documento do usuário dono
+                            const ownerDocRef = docSnapshot.ref.parent.parent;
+                            if (ownerDocRef) {
+                                const ownerId = ownerDocRef.id;
+
+                                // Tentar pegar o nome do dono (opcional, pode ser o ID ou Email do convite)
+                                const permission = docSnapshot.data().permissionLevel || 'viewer';
+                                const permissionLabel = permission === 'admin' ? 'Admin' : (permission === 'editor' ? 'Editor' : 'Leitor');
+
+                                const isActive = window.currentWorkspaceOwnerId === ownerId;
+
+                                html += `
+                                    <button class="dropdown-item ${isActive ? 'active' : ''}" 
+                                            onclick="switchWorkspace('${ownerId}', 'Workspace de ${docSnapshot.data().invitedBy || 'Outro'}')">
+                                        <i data-lucide="${isActive ? 'check' : 'users'}" width="16"></i>
+                                        <div>
+                                            <div style="font-weight: 500;">Workspace de ${docSnapshot.data().invitedBy || '...'}</div>
+                                            <div style="font-size: 11px; opacity: 0.7;">${permissionLabel}</div>
+                                        </div>
+                                    </button>
+                                `;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error("Erro ao carregar workspaces compartilhados:", error);
+                    // Se der erro de índice, pelo menos o próprio workspace já foi renderizado
+                }
+
+                listContainer.innerHTML = html;
+                lucide.createIcons();
+            };
+
+            window.switchWorkspace = async (ownerId, workspaceName) => {
+                if (window.currentWorkspaceOwnerId === ownerId) return;
+
+                // 1. Atualizar ID Global
+                window.currentWorkspaceOwnerId = ownerId;
+                window.currentWorkspaceName = workspaceName || "Workspace";
+                console.log(`Alternando para workspace: ${ownerId}`);
+
+                // 2. Salvar preferência (opcional)
+                localStorage.setItem('lastWorkspaceId', ownerId);
+
+                // 3. Feedback visual
+                showToast(`Acessando ${workspaceName}...`, 'info');
+
+                // Fecha dropdown
+                document.getElementById('user-dropdown').classList.remove('show');
+
+                // 4. Recarregar dados do novo workspace
+                // Limpar dados atuais visualmente
+                document.getElementById('pending-list').innerHTML = '<div style="padding:20px; text-align:center;">Carregando...</div>';
+                document.getElementById('company-list').innerHTML = '<div style="padding:20px; text-align:center;">Carregando...</div>';
+
+                try {
+                    // Recarregar tudo
+                    await loadData();
+
+                    // Atualizar lista para refletir o ativo
+                    if (auth.currentUser) {
+                        loadUserWorkspaces(auth.currentUser);
+                    }
+
+                    showToast(`Você está agora no ${workspaceName}`, 'success');
+                } catch (error) {
+                    console.error("Erro ao trocar workspace:", error);
+                    showToast("Erro ao carregar dados do workspace", "error");
+                }
+            };
+
         });
     </script>
 
