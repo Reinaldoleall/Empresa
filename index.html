@@ -20,18 +20,15 @@
     <!-- Adicione ESTE SCRIPT AQUI -->
     <script>
         // Funções globais auxiliares que precisam estar disponíveis imediatamente
-        // Se não existir, adicione no início do arquivo:
-function escapeHtml(text) {
-    if (!text) return "";
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-}
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
     </script>
 
 
@@ -4446,68 +4443,33 @@ function escapeHtml(text) {
                 }
             },
 
-            // Corrigir a função switchWorkspace no CollaboratorManager
-async switchWorkspace(ownerId, workspaceName) {
-    console.log('Trocando para workspace:', ownerId, workspaceName);
-    
-    if (window.currentWorkspaceOwnerId === ownerId) {
-        console.log('Já está neste workspace');
-        return;
-    }
+            // NOVA FUNÇÃO: Trocar de Workspace
+            async switchWorkspace(ownerId, name) {
+                if (window.currentWorkspaceOwnerId === ownerId) return;
 
-    try {
-        // Salvar estado
-        window.currentWorkspaceOwnerId = ownerId;
-        window.currentWorkspaceName = workspaceName;
+                // Salvar estado
+                window.currentWorkspaceOwnerId = ownerId;
+                window.currentWorkspaceName = name;
 
-        // Mostrar feedback visual
-        showToast(`Alternando para ${workspaceName}...`, 'info');
+                // Mostrar feedback visual
+                const appScreen = document.getElementById('app-screen');
+                appScreen.style.opacity = '0.5';
+                showToast(`Alternando para ${name}...`, 'info');
 
-        // 1. Limpar todos os listeners anteriores
-        if (unsubTasks) {
-            unsubTasks();
-            unsubTasks = null;
-        }
-        if (unsubCompanies) {
-            unsubCompanies();
-            unsubCompanies = null;
-        }
-        if (unsubNotes) {
-            unsubNotes();
-            unsubNotes = null;
-        }
-        if (unsubPins) {
-            unsubPins();
-            unsubPins = null;
-        }
+                // Limpar listeners antigos
+                if (unsubTasks) unsubTasks();
+                if (unsubCompanies) unsubCompanies();
+                if (unsubPins) unsubPins();
+                if (unsubNotes) unsubNotes();
 
-        // 2. Limpar dados locais
-        allTasks = [];
-        allCompanies = [];
-        allNotes = [];
-        allPins = [];
-
-        // 3. Atualizar interface
-        updateHeaderLayout();
-        
-        // 4. Recarregar dados do novo workspace
-        setTimeout(() => {
-            subscribeData(); // Reinscrever listeners com novo ownerId
-            
-            // Forçar renderização
-            if (currentTab === 'tasks') renderTasks();
-            if (currentTab === 'companies') renderCompanies();
-            if (currentTab === 'notes') renderNotes();
-            if (currentTab === 'dashboard') DashboardManager.init();
-            
-            showToast(`Você está agora em: ${workspaceName}`, 'success');
-        }, 500);
-
-    } catch (error) {
-        console.error('Erro ao trocar workspace:', error);
-        showToast('Erro ao trocar de escritório', 'error');
-    }
-}
+                // Recarregar dados do novo workspace
+                setTimeout(() => {
+                    subscribeData();
+                    updateHeaderLayout(); // Atualizar cabeçalho com novo nome
+                    appScreen.style.opacity = '1';
+                    showToast(`Você está agora em: ${name}`, 'success');
+                }, 500);
+            }
         };
 
 
@@ -6522,48 +6484,32 @@ async switchWorkspace(ownerId, workspaceName) {
         // AUTH LOGIC
         // ============================================
 
-        // No onAuthStateChanged, garantir inicialização:
-onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    if (user) {
-        // Definir workspace padrão
-        if (!window.currentWorkspaceOwnerId) {
-            window.currentWorkspaceOwnerId = user.uid;
-            window.currentWorkspaceName = "Meu Escritório";
-        }
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                // Definir workspace padrão como o do próprio usuário se não estiver definido
+                if (!window.currentWorkspaceOwnerId) {
+                    window.currentWorkspaceOwnerId = user.uid;
+                    window.currentWorkspaceName = "Meu Escritório";
+                }
 
-        document.getElementById('auth-screen').classList.add('hidden');
-        document.getElementById('app-screen').classList.remove('hidden');
-        
-        // Inicializar sistemas na ordem correta
-        setTimeout(() => {
-            subscribeData(); // 1. Dados do workspace
-            initHeader();    // 2. Header com menu
-            initNotesSystem(); // 3. Notas
-            initPinsSystem(); // 4. Pins
-            initInvitesSystem(); // 5. Convites
-            
-            // Carregar workspaces disponíveis
-            CollaboratorManager.listAccessibleWorkspaces();
-        }, 500);
-        
-        lucide.createIcons();
-    } else {
-        // Logout cleanup
-        document.getElementById('app-screen').classList.add('hidden');
-        document.getElementById('auth-screen').classList.remove('hidden');
-        
-        // Limpar todos os listeners
-        if (unsubTasks) unsubTasks();
-        if (unsubCompanies) unsubCompanies();
-        if (unsubNotes) unsubNotes();
-        if (unsubPins) unsubPins();
-        
-        // Resetar workspace
-        window.currentWorkspaceOwnerId = null;
-        window.currentWorkspaceName = "Meu Workspace";
-    }
-});
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                subscribeData();
+                initHeader();
+                initNotificationSystem();
+                initNotesSystem(); // Inicializar sistema de notas
+                lucide.createIcons(); // Recriar ícones após mudança de tela
+            } else {
+                document.getElementById('app-screen').classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
+                if (unsubTasks) unsubTasks();
+                if (unsubCompanies) unsubCompanies();
+                if (unsubPins) unsubPins();
+                if (unsubNotes) unsubNotes();
+                lucide.createIcons(); // Recriar ícones após mudança de tela
+            }
+        });
 
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -7108,48 +7054,34 @@ onAuthStateChanged(auth, (user) => {
                 });
 
                 // Função auxiliar para carregar workspaces
-                // Na função setupUserDropdown, corrigir a parte de carregar workspaces:
-async function loadWorkspacesAsync() {
-    try {
-        const workspaces = await CollaboratorManager.listAccessibleWorkspaces();
-        const container = document.getElementById('workspace-list-container');
-        
-        if (!container) return;
+                async function loadWorkspacesAsync() {
+                    try {
+                        const workspaces = await CollaboratorManager.listAccessibleWorkspaces();
+                        const container = document.getElementById('workspace-list-container');
 
-        if (workspaces.length > 1) {
-            let html = `
-                <div style="padding: 8px 16px; border-top: 1px solid var(--outline-variant); margin-top: 8px;">
-                    <div style="font-size: 11px; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; text-transform: uppercase;">
-                        Trocar Escritório
-                    </div>
-            `;
-
-            workspaces.forEach(ws => {
-                const isActive = ws.ownerId === window.currentWorkspaceOwnerId;
-                html += `
-                    <button onclick="event.stopPropagation(); CollaboratorManager.switchWorkspace('${ws.ownerId}', '${escapeHtml(ws.name)}')" 
-                            class="dropdown-item ${isActive ? 'active' : ''}"
-                            style="padding: 8px 0; font-size: 13px; width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; ${isActive ? 'color: var(--primary); font-weight: 600;' : ''}">
-                        <i data-lucide="${ws.isOwner ? 'home' : 'briefcase'}" width="14"></i>
-                        <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            ${escapeHtml(ws.name)}
-                        </div>
-                        ${isActive ? '<i data-lucide="check" width="14" style="color: var(--primary); flex-shrink: 0;"></i>' : ''}
-                    </button>
-                `;
-            });
-
-            html += `</div>`;
-            container.innerHTML = html;
-            lucide.createIcons();
-        } else {
-            container.innerHTML = ''; // Limpar se só tiver um workspace
-        }
-    } catch (error) {
-        console.error('Erro ao carregar workspaces:', error);
-    }
-}
-
+                        if (container && workspaces.length > 1) {
+                            container.innerHTML = `
+                                <div style="padding: 8px 16px; border-top: 1px solid var(--outline-variant); margin-top: 8px;">
+                                    <div style="font-size: 11px; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; text-transform: uppercase;">
+                                        Trocar Escritório
+                                    </div>
+                                    ${workspaces.map(ws => `
+                                        <button onclick="CollaboratorManager.switchWorkspace('${ws.ownerId}', '${ws.name}')" 
+                                                class="dropdown-item ${ws.ownerId === window.currentWorkspaceOwnerId ? 'active' : ''}"
+                                                style="padding: 8px 0; font-size: 13px; width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer;">
+                                            <i data-lucide="${ws.isOwner ? 'home' : 'briefcase'}" width="14"></i>
+                                            <div style="flex: 1; overflow: hidden; text-overflow: ellipsis;">${ws.name}</div>
+                                            ${ws.ownerId === window.currentWorkspaceOwnerId ? '<i data-lucide="check" width="14" style="color: var(--primary);"></i>' : ''}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            `;
+                            lucide.createIcons();
+                        }
+                    } catch (error) {
+                        console.error('Erro ao carregar workspaces:', error);
+                    }
+                }
 
                 // Fechar dropdown com ESC
                 document.addEventListener('keydown', function (e) {
@@ -11887,7 +11819,10 @@ async function loadWorkspacesAsync() {
             setTimeout(() => toast.remove(), 3000);
         }
 
-       
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
 
         // Inicializar ícones e definir filtro inicial
         lucide.createIcons();
