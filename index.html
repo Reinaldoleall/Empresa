@@ -5056,6 +5056,132 @@
         };
 
         // ============================================
+        // WORKSPACE MANAGEMENT (GLOBAL)
+        // ============================================
+
+        // CSS for User Dropdown
+        const dropdownStyle = document.createElement('style');
+        dropdownStyle.textContent = `
+            .user-dropdown {
+                display: none;
+                position: absolute;
+                top: 100%;
+                right: 0;
+                background: white;
+                border: 1px solid var(--outline-variant);
+                border-radius: var(--radius-lg);
+                box-shadow: var(--shadow-lg);
+                min-width: 250px;
+                z-index: 1000;
+                margin-top: 8px;
+            }
+            .user-dropdown.active {
+                display: block;
+                animation: fadeIn 0.2s ease;
+            }
+            .dropdown-item.active {
+                background-color: var(--surface-variant);
+                color: var(--primary);
+                font-weight: 600;
+            }
+        `;
+        document.head.appendChild(dropdownStyle);
+
+        window.toggleUserMenu = (e) => {
+            if (e) e.stopPropagation();
+            const menu = document.getElementById('user-dropdown');
+            if (menu) {
+                const isActive = menu.classList.contains('active');
+
+                // Close all other dropdowns
+                document.querySelectorAll('.user-dropdown, .notification-dropdown').forEach(el => el.classList.remove('active', 'hidden'));
+                document.getElementById('notification-dropdown')?.classList.add('hidden');
+
+                if (!isActive) {
+                    menu.classList.add('active');
+                    loadUserWorkspaces();
+                } else {
+                    menu.classList.remove('active');
+                }
+            }
+        };
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('user-dropdown');
+            if (menu && menu.classList.contains('active') && !e.target.closest('.user-actions')) {
+                menu.classList.remove('active');
+            }
+        });
+
+        window.loadUserWorkspaces = async () => {
+            const list = document.getElementById('workspace-list');
+            if (!list) return;
+
+            list.innerHTML = '<div style="padding:10px; text-align:center; color: var(--text-sec);"><i data-lucide="loader-2" class="loading-spinner" width="20"></i><p style="font-size:12px; margin-top:5px;">Carregando...</p></div>';
+            lucide.createIcons();
+
+            const workspaces = await CollaboratorManager.listAccessibleWorkspaces();
+
+            list.innerHTML = '';
+
+            if (workspaces.length === 0) {
+                list.innerHTML = '<div style="padding:10px; text-align:center; font-size:12px; color:var(--text-sec);">Nenhum escritório encontrado</div>';
+                return;
+            }
+
+            workspaces.forEach(ws => {
+                const isActive = window.currentWorkspaceOwnerId === ws.ownerId;
+                const btn = document.createElement('button');
+                btn.className = `dropdown-item ${isActive ? 'active' : ''}`;
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    switchWorkspace(ws.ownerId, ws.name);
+                };
+                btn.style.cssText = `
+                    display: flex; 
+                    align-items: center; 
+                    gap: 10px; 
+                    width: 100%; 
+                    padding: 12px 16px; 
+                    border: none; 
+                    background: ${isActive ? 'rgba(103, 80, 164, 0.08)' : 'transparent'}; 
+                    color: var(--on-surface); 
+                    cursor: pointer; 
+                    text-align: left;
+                    font-size: 14px;
+                    border-bottom: 1px solid var(--surface-variant);
+                    transition: background 0.2s;
+                 `;
+
+                btn.innerHTML = `
+                     <div style="width: 32px; height: 32px; border-radius: 50%; background: ${isActive ? 'var(--primary)' : 'var(--surface-variant)'}; color: ${isActive ? 'white' : 'var(--outline)'}; display: flex; align-items: center; justify-content: center;">
+                        ${isActive ? '<i data-lucide="check" width="16"></i>' : '<i data-lucide="building-2" width="16"></i>'}
+                     </div>
+                     <div style="flex: 1;">
+                        <div style="font-weight: 600; color: ${isActive ? 'var(--primary)' : 'var(--on-surface)'};">${ws.name}</div>
+                        ${ws.isOwner ? '<div style="font-size: 11px; color: var(--text-sec);">Proprietário • Admin</div>' : `<div style="font-size: 11px; color: var(--text-sec);">Colaborador • ${ws.permission === 'admin' ? 'Admin' : ws.permission === 'editor' ? 'Editor' : 'Leitor'}</div>`}
+                     </div>
+                 `;
+
+                // Hover effect
+                btn.onmouseenter = () => { if (!isActive) btn.style.background = 'rgba(0,0,0,0.02)'; };
+                btn.onmouseleave = () => { if (!isActive) btn.style.background = 'transparent'; };
+
+                list.appendChild(btn);
+            });
+            lucide.createIcons();
+        };
+
+        window.switchWorkspace = (id, name) => {
+            // Close menu
+            const menu = document.getElementById('user-dropdown');
+            if (menu) menu.classList.remove('active');
+
+            CollaboratorManager.switchWorkspace(id, name);
+        };
+
+        // ============================================
         // MODAL DE COLABORADORES COMPLETO
         // ============================================
 
