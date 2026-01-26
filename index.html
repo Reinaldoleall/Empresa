@@ -5114,71 +5114,186 @@
             }
         });
 
-        window.loadUserWorkspaces = async () => {
-            const list = document.getElementById('workspace-list');
-            if (!list) return;
+        window.loadUserWorkspaces = async (user = currentUser) => {
+            const listContainer = document.getElementById('workspace-list');
+            if (!listContainer || !user) return;
 
-            list.innerHTML = '<div style="padding:10px; text-align:center; color: var(--text-sec);"><i data-lucide="loader-2" class="loading-spinner" width="20"></i><p style="font-size:12px; margin-top:5px;">Carregando...</p></div>';
-            lucide.createIcons();
+            // Limpar lista
+            listContainer.innerHTML = '<div style="padding:10px; color: var(--text-sec);">Carregando...</div>';
 
-            const workspaces = await CollaboratorManager.listAccessibleWorkspaces();
+            try {
+                // 1. SEMPRE incluir o próprio workspace do usuário
+                let workspaces = [{
+                    id: user.uid,
+                    name: 'Meu Workspace',
+                    ownerId: user.uid,
+                    isOwner: true,
+                    permission: 'owner'
+                }];
 
-            list.innerHTML = '';
+                // 2. Buscar workspaces onde sou colaborador
+                const collaboratorsRef = collection(db, 'artifacts', appId, 'collaborators');
+                const q = query(
+                    collaboratorsRef,
+                    where('email', '==', user.email),
+                    where('status', '==', 'active')
+                );
 
-            if (workspaces.length === 0) {
-                list.innerHTML = '<div style="padding:10px; text-align:center; font-size:12px; color:var(--text-sec);">Nenhum escritório encontrado</div>';
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        workspaces.push({
+                            id: data.ownerId,
+                            name: `Escritório de ${data.invitedBy || data.ownerEmail}`,
+                            ownerId: data.ownerId,
+                            isOwner: false,
+                            permission: data.permissionLevel || 'viewer',
+                            invitedBy: data.invitedBy
+                        });
+                    });
+                }
+
+                // 3. Renderizar lista
+                listContainer.innerHTML = '';
+
+                workspaces.forEach(workspace => {
+                    const isActive = window.currentWorkspaceOwnerId === workspace.ownerId;
+
+                    const button = document.createElement('button');
+                    button.className = `dropdown-item ${isActive ? 'active' : ''}`;
+                    button.style.cssText = `
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        width: 100%;
+                        padding: 10px 16px;
+                        border: none;
+                        background: ${isActive ? 'rgba(103, 80, 164, 0.1)' : 'transparent'};
+                        color: var(--on-surface);
+                        cursor: pointer;
+                        text-align: left;
+                        font-size: 14px;
+                        border-bottom: 1px solid var(--surface-variant);
+                    `;
+
+                    button.onclick = (e) => {
+                        e.stopPropagation();
+                        switchWorkspace(workspace.ownerId, workspace.name);
+                    };
+
+                    button.innerHTML = `
+                        <div style="width: 24px; height: 24px; border-radius: 50%; 
+                                    background: ${isActive ? 'var(--primary)' : 'var(--surface-variant)'}; 
+                                    color: ${isActive ? 'white' : 'var(--outline)'};
+                                    display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="${workspace.isOwner ? 'user' : 'users'}" width="12"></i>
+                        </div>
+                        <div style="flex: 1; overflow: hidden; text-overflow: ellipsis;">
+                            <div style="font-weight: ${isActive ? '600' : '500'}; 
+                                        color: ${isActive ? 'var(--primary)' : 'var(--on-surface)'};">
+                                ${workspace.name}
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-sec);">
+                                ${workspace.isOwner ? 'Proprietário' : `${workspace.permission} • Convidado por ${workspace.invitedBy || ''}`}
+                            </div>
+                        </div>
+                        ${isActive ? '<i data-lucide="check" width="14" style="color: var(--primary);"></i>' : ''}
+                    `;
+
+                    listContainer.appendChild(button);
+                });
+
+                // Se não houver workspaces além do próprio
+                if (workspaces.length === 1) {
+                    listContainer.innerHTML += `
+                        <div style="padding: 10px 16px; font-size: 12px; color: var(--text-sec); text-align: center;">
+                            Você ainda não tem escritórios compartilhados
+                        </div>
+                    `;
+                }
+
+                lucide.createIcons();
+
+            } catch (error) {
+                console.error('Erro ao carregar workspaces:', error);
+                listContainer.innerHTML = `
+                    <div style="padding: 10px; color: var(--error); font-size: 12px;">
+                        Erro ao carregar escritórios: ${error.message}
+                    </div>
+                `;
+            }
+        };
+
+        window.switchWorkspace = async (ownerId, workspaceName) => {
+            if (window.currentWorkspaceOwnerId === ownerId) {
+                console.log('Já está neste workspace');
                 return;
             }
 
-            workspaces.forEach(ws => {
-                const isActive = window.currentWorkspaceOwnerId === ws.ownerId;
-                const btn = document.createElement('button');
-                btn.className = `dropdown-item ${isActive ? 'active' : ''}`;
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    switchWorkspace(ws.ownerId, ws.name);
-                };
-                btn.style.cssText = `
-                    display: flex; 
-                    align-items: center; 
-                    gap: 10px; 
-                    width: 100%; 
-                    padding: 12px 16px; 
-                    border: none; 
-                    background: ${isActive ? 'rgba(103, 80, 164, 0.08)' : 'transparent'}; 
-                    color: var(--on-surface); 
-                    cursor: pointer; 
-                    text-align: left;
-                    font-size: 14px;
-                    border-bottom: 1px solid var(--surface-variant);
-                    transition: background 0.2s;
-                 `;
-
-                btn.innerHTML = `
-                     <div style="width: 32px; height: 32px; border-radius: 50%; background: ${isActive ? 'var(--primary)' : 'var(--surface-variant)'}; color: ${isActive ? 'white' : 'var(--outline)'}; display: flex; align-items: center; justify-content: center;">
-                        ${isActive ? '<i data-lucide="check" width="16"></i>' : '<i data-lucide="building-2" width="16"></i>'}
-                     </div>
-                     <div style="flex: 1;">
-                        <div style="font-weight: 600; color: ${isActive ? 'var(--primary)' : 'var(--on-surface)'};">${ws.name}</div>
-                        ${ws.isOwner ? '<div style="font-size: 11px; color: var(--text-sec);">Proprietário • Admin</div>' : `<div style="font-size: 11px; color: var(--text-sec);">Colaborador • ${ws.permission === 'admin' ? 'Admin' : ws.permission === 'editor' ? 'Editor' : 'Leitor'}</div>`}
-                     </div>
-                 `;
-
-                // Hover effect
-                btn.onmouseenter = () => { if (!isActive) btn.style.background = 'rgba(0,0,0,0.02)'; };
-                btn.onmouseleave = () => { if (!isActive) btn.style.background = 'transparent'; };
-
-                list.appendChild(btn);
-            });
-            lucide.createIcons();
-        };
-
-        window.switchWorkspace = (id, name) => {
-            // Close menu
+            // 1. Fechar dropdown
+            document.getElementById('user-dropdown')?.classList.remove('show');
             const menu = document.getElementById('user-dropdown');
-            if (menu) menu.classList.remove('active');
+            if (menu) menu.classList.remove('active'); // Compatibilidade
 
-            CollaboratorManager.switchWorkspace(id, name);
+            // 2. Feedback visual
+            showToast(`Alternando para ${workspaceName}...`, 'info');
+
+            // 3. Desativar UI temporariamente
+            const appScreen = document.getElementById('app-screen');
+            appScreen.style.opacity = '0.5';
+            appScreen.style.pointerEvents = 'none';
+
+            try {
+                // 4. Atualizar estado global
+                window.currentWorkspaceOwnerId = ownerId;
+                window.currentWorkspaceName = workspaceName;
+
+                // 5. Limpar dados antigos
+                allTasks = [];
+                allCompanies = [];
+                allNotes = [];
+                allPins = [];
+
+                // 6. Cancelar listeners antigos
+                if (window.unsubTasks) window.unsubTasks();
+                if (window.unsubCompanies) window.unsubCompanies();
+                if (window.unsubNotes) window.unsubNotes();
+                if (window.unsubPins) window.unsubPins();
+
+                // 7. Atualizar header
+                const brandSubtitle = document.querySelector('.brand-subtitle');
+                if (brandSubtitle) brandSubtitle.textContent = workspaceName;
+
+                // 8. Recarregar dados do novo workspace
+                await new Promise(resolve => setTimeout(resolve, 500)); // Pequeno delay
+
+                // Re-inicializar subscriptions
+                if (typeof subscribeData === 'function') subscribeData();
+                else console.error('subscribeData não encontrada');
+
+                // 9. Atualizar UI
+                if (typeof renderTasks === 'function') renderTasks();
+                if (typeof renderCompanies === 'function') renderCompanies();
+                if (typeof renderNotes === 'function') renderNotes();
+
+                // 10. Feedback de sucesso
+                showToast(`✅ Agora você está em: ${workspaceName}`, 'success');
+
+            } catch (error) {
+                console.error('Erro ao trocar workspace:', error);
+                showToast(`❌ Erro ao trocar de escritório: ${error.message}`, 'error');
+            } finally {
+                // 11. Restaurar UI
+                appScreen.style.opacity = '1';
+                appScreen.style.pointerEvents = 'auto';
+
+                // 12. Recarregar lista de workspaces
+                if (typeof auth !== 'undefined' && auth.currentUser) {
+                    loadUserWorkspaces(auth.currentUser);
+                }
+            }
         };
 
         // ============================================
@@ -6650,12 +6765,20 @@
                 // Definir workspace padrão como o do próprio usuário se não estiver definido
                 if (!window.currentWorkspaceOwnerId) {
                     window.currentWorkspaceOwnerId = user.uid;
-                    window.currentWorkspaceName = "Meu Escritório";
+                    window.currentWorkspaceName = "Meu Workspace";
                 }
 
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
+
+                // Atualizar nome do workspace no header
+                const brandSubtitle = document.querySelector('.brand-subtitle');
+                if (brandSubtitle) brandSubtitle.textContent = window.currentWorkspaceName;
+
+                // INICIALIZAÇÃO CENTRALIZADA
                 subscribeData();
+                if (typeof loadUserWorkspaces === 'function') loadUserWorkspaces(user);
+
                 initHeader();
                 initNotificationSystem();
                 initNotesSystem(); // Inicializar sistema de notas
@@ -6663,10 +6786,10 @@
             } else {
                 document.getElementById('app-screen').classList.add('hidden');
                 document.getElementById('auth-screen').classList.remove('hidden');
-                if (unsubTasks) unsubTasks();
-                if (unsubCompanies) unsubCompanies();
-                if (unsubPins) unsubPins();
-                if (unsubNotes) unsubNotes();
+                if (window.unsubTasks) window.unsubTasks();
+                if (window.unsubCompanies) window.unsubCompanies();
+                if (window.unsubPins) window.unsubPins();
+                if (window.unsubNotes) window.unsubNotes();
                 lucide.createIcons(); // Recriar ícones após mudança de tela
             }
         });
@@ -7356,6 +7479,16 @@
 
         function subscribeData() {
             if (!currentUser) return;
+
+            // VERIFICAÇÃO CRÍTICA
+            if (!window.currentWorkspaceOwnerId) {
+                console.error('Nenhum workspace selecionado!');
+                // Tenta recuperar do fallback ou do usuário atual
+                window.currentWorkspaceOwnerId = currentUser.uid;
+                window.currentWorkspaceName = "Meu Workspace";
+            }
+
+            console.log(`Carregando dados do workspace: ${window.currentWorkspaceOwnerId}`);
 
             // Inicializar sistema de convites
             setTimeout(() => {
@@ -12632,123 +12765,7 @@
                 }
             });
 
-            // ==========================================
-            // LÓGICA DE WORKSPACES (CORREÇÃO)
-            // ==========================================
 
-            window.toggleUserMenu = (e) => {
-                e.stopPropagation();
-                const dropdown = document.getElementById('user-dropdown');
-                dropdown.classList.toggle('show');
-            };
-
-            // Fechar dropdown ao clicar fora
-            document.addEventListener('click', (e) => {
-                const dropdown = document.getElementById('user-dropdown');
-                const profileBtn = document.querySelector('.user-profile');
-
-                if (dropdown && dropdown.classList.contains('show')) {
-                    if (!dropdown.contains(e.target) && !profileBtn.contains(e.target)) {
-                        dropdown.classList.remove('show');
-                    }
-                }
-            });
-
-            window.loadUserWorkspaces = async (user) => {
-                const listContainer = document.getElementById('workspace-list');
-                if (!listContainer) return;
-
-                // 1. Adicionar meu pròprio workspace
-                let html = `
-                    <button class="dropdown-item ${window.currentWorkspaceOwnerId === user.uid ? 'active' : ''}" 
-                            onclick="switchWorkspace('${user.uid}', '${user.displayName || 'Meu Workspace'}')">
-                        <i data-lucide="${window.currentWorkspaceOwnerId === user.uid ? 'check' : 'user'}" width="16"></i>
-                        Meu Workspace
-                    </button>
-                `;
-
-                try {
-                    // 2. Buscar workspaces compartilhados (onde sou colaborador)
-                    // Usa collectionGroup para buscar em TODAS as coleções 'collaborators' do banco
-                    const q = query(collectionGroup(db, 'collaborators'), where('email', '==', user.email));
-                    const querySnapshot = await getDocs(q);
-
-                    if (!querySnapshot.empty) {
-                        html += `<div style="padding: 8px 16px; font-size: 11px; font-weight: 600; color: var(--on-surface-variant); margin-top: 8px;">COMPARTILHADOS COMIGO</div>`;
-
-                        // Para cada convite, descobrir quem é o dono do workspace
-                        for (const docSnapshot of querySnapshot.docs) {
-                            // A estrutura é: artifacts/{appId}/users/{OWNER_ID}/collaborators/{COLLAB_ID}
-                            // O parent do parent deve ser o documento do usuário dono
-                            const ownerDocRef = docSnapshot.ref.parent.parent;
-                            if (ownerDocRef) {
-                                const ownerId = ownerDocRef.id;
-
-                                // Tentar pegar o nome do dono (opcional, pode ser o ID ou Email do convite)
-                                const permission = docSnapshot.data().permissionLevel || 'viewer';
-                                const permissionLabel = permission === 'admin' ? 'Admin' : (permission === 'editor' ? 'Editor' : 'Leitor');
-
-                                const isActive = window.currentWorkspaceOwnerId === ownerId;
-
-                                html += `
-                                    <button class="dropdown-item ${isActive ? 'active' : ''}" 
-                                            onclick="switchWorkspace('${ownerId}', 'Workspace de ${docSnapshot.data().invitedBy || 'Outro'}')">
-                                        <i data-lucide="${isActive ? 'check' : 'users'}" width="16"></i>
-                                        <div>
-                                            <div style="font-weight: 500;">Workspace de ${docSnapshot.data().invitedBy || '...'}</div>
-                                            <div style="font-size: 11px; opacity: 0.7;">${permissionLabel}</div>
-                                        </div>
-                                    </button>
-                                `;
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error("Erro ao carregar workspaces compartilhados:", error);
-                    // Se der erro de índice, pelo menos o próprio workspace já foi renderizado
-                }
-
-                listContainer.innerHTML = html;
-                lucide.createIcons();
-            };
-
-            window.switchWorkspace = async (ownerId, workspaceName) => {
-                if (window.currentWorkspaceOwnerId === ownerId) return;
-
-                // 1. Atualizar ID Global
-                window.currentWorkspaceOwnerId = ownerId;
-                window.currentWorkspaceName = workspaceName || "Workspace";
-                console.log(`Alternando para workspace: ${ownerId}`);
-
-                // 2. Salvar preferência (opcional)
-                localStorage.setItem('lastWorkspaceId', ownerId);
-
-                // 3. Feedback visual
-                showToast(`Acessando ${workspaceName}...`, 'info');
-
-                // Fecha dropdown
-                document.getElementById('user-dropdown').classList.remove('show');
-
-                // 4. Recarregar dados do novo workspace
-                // Limpar dados atuais visualmente
-                document.getElementById('pending-list').innerHTML = '<div style="padding:20px; text-align:center;">Carregando...</div>';
-                document.getElementById('company-list').innerHTML = '<div style="padding:20px; text-align:center;">Carregando...</div>';
-
-                try {
-                    // Recarregar tudo
-                    await loadData();
-
-                    // Atualizar lista para refletir o ativo
-                    if (auth.currentUser) {
-                        loadUserWorkspaces(auth.currentUser);
-                    }
-
-                    showToast(`Você está agora no ${workspaceName}`, 'success');
-                } catch (error) {
-                    console.error("Erro ao trocar workspace:", error);
-                    showToast("Erro ao carregar dados do workspace", "error");
-                }
-            };
 
         });
     </script>
