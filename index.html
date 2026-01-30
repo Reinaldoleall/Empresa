@@ -7048,15 +7048,20 @@
                     console.log(`Respondendo ao convite ${inviteId}: ${accept ? 'Aceitar' : 'Recusar'}`);
                     try {
                         const inviteRef = doc(db, 'artifacts', appId, 'invites', inviteId);
-                        const inviteSnap = await getDoc(inviteRef);
 
-                        if (!inviteSnap.exists()) {
-                            console.error('Convite não existe no Firestore');
-                            showToast('Convite não encontrado', 'error');
+                        // FIX: Substituir getDoc por busca na lista de convites para evitar erro de import
+                        // const inviteSnap = await getDoc(inviteRef);
+
+                        // Buscar todos os convites pendentes e filtrar pelo ID
+                        const myInvites = await CollaboratorManager.listMyInvites();
+                        const inviteData = myInvites.find(inv => inv.id === inviteId);
+
+                        if (!inviteData) {
+                            console.error('Convite não encontrado na lista de pendentes');
+                            showToast('Convite não encontrado ou já processado', 'error');
                             return false;
                         }
 
-                        const inviteData = inviteSnap.data();
                         console.log('Dados do convite:', inviteData);
                         const newStatus = accept ? 'accepted' : 'rejected';
 
@@ -7066,10 +7071,9 @@
                         console.log('Status global atualizado.');
 
                         // 2. Atualizar status na lista de colaboradores do workspace dono
-                        // Precisamos achar o doc do colaborador na subcoleção do dono
                         const ownerId = inviteData.workspaceOwnerId;
                         console.log(`Buscando registro de colaborador para ${inviteData.toEmail} no workspace de ${ownerId}...`);
-                        
+
                         try {
                             const collabRef = collection(db, 'artifacts', appId, 'users', ownerId, 'collaborators');
                             const q = query(collabRef, where('email', '==', inviteData.toEmail));
@@ -7085,15 +7089,23 @@
                                 console.log('Registro de colaborador atualizado.');
                             } else {
                                 console.warn('Registro de colaborador NÃO encontrado no workspace do dono.');
-                                // Isso é estranho, mas não deve bloquear o fluxo principal se o convite global foi atualizado
                             }
                         } catch (innerError) {
                             console.error('Erro ao atualizar registro de colaborador (provável erro de permissão):', innerError);
-                            // Não bloquear o sucesso se falhar aqui, pois o convite já foi marcado como aceito
-                            // O dono do workspace terá que corrigir manualmente ou sincronizar depois
                         }
 
                         showToast(accept ? 'Convite aceito!' : 'Convite recusado', accept ? 'success' : 'info');
+
+                        // Atualizar a lista de convites na UI se estiver aberta
+                        if (window.handleOpenInvites) {
+                            // Apenas recarregar se o modal estiver aberto (opcional, ou deixar o usuário reabrir)
+                            const modal = document.querySelector('.modal-overlay');
+                            if (modal && modal.innerHTML.includes('Convites Recebidos')) {
+                                // Fechar modal para evitar estado inconsistente ou recarregar
+                                modal.remove();
+                            }
+                        }
+
                         return true;
                     } catch (error) {
                         console.error('Erro CRÍTICO ao responder convite:', error);
