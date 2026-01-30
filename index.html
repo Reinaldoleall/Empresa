@@ -7002,33 +7002,43 @@
                     try {
                         const workspaces = [];
 
-                        // 1. Meu próprio workspace
+                        // 1. Meu próprio workspace (SEMPRE ADICIONAR PRIMEIRO)
                         workspaces.push({
                             ownerId: currentUser.uid,
                             name: 'Meu Workspace',
                             isOwner: true
                         });
 
-                        // 2. Workspaces compartilhados (onde sou colaborador 'active')
-                        // Procurar em todos os convites aceitos ou uma coleção de 'shared_access'
-                        // Estratégia: Buscar convites onde status == 'accepted' e toEmail == meu email
-                        const invitesRef = collection(db, 'artifacts', appId, 'invites');
-                        const q = query(invitesRef, where('toEmail', '==', currentUser.email), where('status', '==', 'accepted'));
-                        const snapshot = await getDocs(q);
+                        // 2. Workspaces compartilhados
+                        try {
+                            const invitesRef = collection(db, 'artifacts', appId, 'invites');
+                            // IMPORTANTE: Garantir que indices do Firestore existam para esta query composta
+                            // toEmail ASC, status ASC
+                            const q = query(invitesRef, where('toEmail', '==', currentUser.email), where('status', '==', 'accepted'));
 
-                        snapshot.forEach(doc => {
-                            const data = doc.data();
-                            workspaces.push({
-                                ownerId: data.workspaceOwnerId,
-                                name: data.fromWorkspaceName,
-                                isOwner: false,
-                                permission: data.permission
+                            const snapshot = await getDocs(q);
+
+                            snapshot.forEach(doc => {
+                                const data = doc.data();
+
+                                // Evitar duplicatas se algo estranho acontecer
+                                if (!workspaces.some(w => w.ownerId === data.workspaceOwnerId)) {
+                                    workspaces.push({
+                                        ownerId: data.workspaceOwnerId,
+                                        name: data.fromWorkspaceName || 'Workspace Compartilhado',
+                                        isOwner: false,
+                                        permission: data.permission || 'viewer'
+                                    });
+                                }
                             });
-                        });
+                        } catch (errKey) {
+                            console.warn('Erro ao buscar invites aceitos (pode ser falta de índice ou permissão):', errKey);
+                        }
 
                         return workspaces;
                     } catch (error) {
-                        console.error('Erro ao listar workspaces acessíveis:', error);
+                        console.error('Erro geral ao listar workspaces:', error);
+                        // Fallback seguro
                         return [{ ownerId: currentUser.uid, name: 'Meu Workspace', isOwner: true }];
                     }
                 },
@@ -7513,30 +7523,43 @@
                 // Função auxiliar para carregar workspaces
                 async function loadWorkspacesAsync() {
                     try {
-                        const workspaces = await CollaboratorManager.listAccessibleWorkspaces();
+                        console.log('Carregando workspaces...');
                         const container = document.getElementById('workspace-list-container');
+                        if (container) container.innerHTML = '<div style="padding:8px; text-align:center; font-size:12px; color:var(--text-sec);">Carregando escritórios...</div>';
 
-                        if (container && workspaces.length > 1) {
-                            container.innerHTML = `
-                                <div style="padding: 8px 16px; border-top: 1px solid var(--outline-variant); margin-top: 8px;">
-                                    <div style="font-size: 11px; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; text-transform: uppercase;">
-                                        Trocar Escritório
+                        const workspaces = await CollaboratorManager.listAccessibleWorkspaces();
+                        console.log('Workspaces encontrados:', workspaces);
+
+                        if (container) {
+                            if (workspaces.length > 1) {
+                                container.innerHTML = `
+                                    <div style="padding: 8px 16px; border-top: 1px solid var(--outline-variant); margin-top: 8px;">
+                                        <div style="font-size: 11px; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; text-transform: uppercase;">
+                                            Trocar Escritório
+                                        </div>
+                                        ${workspaces.map(ws => `
+                                            <button onclick="CollaboratorManager.switchWorkspace('${ws.ownerId}', '${ws.name}')" 
+                                                    class="dropdown-item ${ws.ownerId === window.currentWorkspaceOwnerId ? 'active' : ''}"
+                                                    style="padding: 8px 0; font-size: 13px; width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer;">
+                                                <i data-lucide="${ws.isOwner ? 'home' : 'briefcase'}" width="14"></i>
+                                                <div style="flex: 1; overflow: hidden; text-overflow: ellipsis;">${ws.name}</div>
+                                                ${ws.ownerId === window.currentWorkspaceOwnerId ? '<i data-lucide="check" width="14" style="color: var(--primary);"></i>' : ''}
+                                                ${ws.permission ? `<span style="font-size:9px; background:var(--surface); padding:2px 4px; border-radius:4px; border:1px solid var(--outline-variant);">${ws.permission === 'admin' ? 'ADM' : ws.permission === 'editor' ? 'EDIT' : 'VER'}</span>` : ''}
+                                            </button>
+                                        `).join('')}
                                     </div>
-                                    ${workspaces.map(ws => `
-                                        <button onclick="CollaboratorManager.switchWorkspace('${ws.ownerId}', '${ws.name}')" 
-                                                class="dropdown-item ${ws.ownerId === window.currentWorkspaceOwnerId ? 'active' : ''}"
-                                                style="padding: 8px 0; font-size: 13px; width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer;">
-                                            <i data-lucide="${ws.isOwner ? 'home' : 'briefcase'}" width="14"></i>
-                                            <div style="flex: 1; overflow: hidden; text-overflow: ellipsis;">${ws.name}</div>
-                                            ${ws.ownerId === window.currentWorkspaceOwnerId ? '<i data-lucide="check" width="14" style="color: var(--primary);"></i>' : ''}
-                                        </button>
-                                    `).join('')}
-                                </div>
-                            `;
-                            lucide.createIcons();
+                                `;
+                                lucide.createIcons();
+                            } else {
+                                container.innerHTML = '';
+                                // Opcional: Avisar que não tem outros
+                                // container.innerHTML = '<div style="padding:8px; text-align:center; font-size:11px; color:var(--text-sec);">Nenhum escritório compartilhado</div>';
+                            }
                         }
                     } catch (error) {
                         console.error('Erro ao carregar workspaces:', error);
+                        const container = document.getElementById('workspace-list-container');
+                        if (container) container.innerHTML = '<div style="padding:8px; color:var(--error); font-size:11px;">Erro ao carregar</div>';
                     }
                 }
 
